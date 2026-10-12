@@ -1,0 +1,17 @@
+streamlit
+pandas
+numpy
+joblib
+requests
+plotly
+folium
+streamlit-folium
+python-dotenv
+
+# PENTING: dua baris di bawah harus DISAMAKAN dengan versi yang dipakai
+# saat model dilatih, kalau tidak file .pkl bisa gagal dimuat atau
+# memberi peringatan ketidakcocokan versi.
+# Cek versimu dengan:  pip show scikit-learn xgboost
+# lalu tulis angkanya di sini, contoh: scikit-learn==1.5.2
+scikit-learn==1.9.0
+xgboost==3.2.0
