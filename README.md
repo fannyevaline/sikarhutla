@@ -26,7 +26,7 @@ streamlit run app.py
 
 Aplikasi terbuka di `http://localhost:8501`.
 
-Salin `.env.example` menjadi `.env` dan isi kunci API yang diperlukan untuk
+Salin `env.example` menjadi `.env` dan isi kunci API yang diperlukan untuk
 pemanggilan data cuaca periode mendatang. Tanpa berkas itu, modul historis tetap
 berjalan normal.
 
@@ -36,12 +36,12 @@ berjalan normal.
 
 Empat halaman yang memuat sembilan modul fungsional sesuai rancangan pada Bab 3:
 
-| Halaman | Modul fungsional |
-|---|---|
-| Beranda | Beranda |
-| Klasifikasi | Peta Interaktif Kerawanan · Pemilihan Wilayah dan Periode · Klasifikasi Kerawanan · Hasil Klasifikasi dan Confidence · Rincian Variabel Prediktor · Informasi Periode Mendatang |
-| Performa Model | Perbandingan Performa Model |
-| Bantuan | Bantuan |
+| Halaman        | Modul fungsional                                                                                                                                                                |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Beranda        | Beranda                                                                                                                                                                         |
+| Klasifikasi    | Peta Interaktif Kerawanan · Pemilihan Wilayah dan Periode · Klasifikasi Kerawanan · Hasil Klasifikasi dan Confidence · Rincian Variabel Prediktor · Informasi Periode Mendatang |
+| Performa Model | Perbandingan Performa Model                                                                                                                                                     |
+| Bantuan        | Bantuan                                                                                                                                                                         |
 
 ---
 
@@ -65,15 +65,15 @@ data dan pelatihan dikerjakan pada proyek terpisah.
 
 ## Model dan data
 
-| Berkas | Keterangan |
-|---|---|
-| `data/model/model_rf_final.pkl` | Random Forest, `n_estimators=200`, `random_state=42` |
-| `data/model/model_xgb_final.pkl` | XGBoost, parameter disamakan |
-| `data/model/feature_columns_encoded.pkl` | nama kolom setelah one-hot encoding |
-| `data/model/perbandingan_smotenc.csv` | hasil evaluasi kedua model |
-| `data/dataset_final.csv` | 14.586 baris, 221 grid, Januari 2021 – Juni 2026 |
-| `data/tertile_cutoff.json` | ambang kelas: P33 = 3, P67 = 11 titik panas |
-| `data/grid_kalimantan.csv` | 232 grid wilayah kajian berukuran 0,5° × 0,5° |
+| Berkas                                   | Keterangan                                           |
+| ---------------------------------------- | ---------------------------------------------------- |
+| `data/model/model_rf_final.pkl`          | Random Forest, `n_estimators=200`, `random_state=42` |
+| `data/model/model_xgb_final.pkl`         | XGBoost, parameter disamakan                         |
+| `data/model/feature_columns_encoded.pkl` | nama kolom setelah one-hot encoding                  |
+| `data/model/perbandingan_smotenc.csv`    | hasil evaluasi kedua model                           |
+| `data/dataset_final.csv`                 | 14.586 baris, 221 grid, Januari 2021 – Juni 2026     |
+| `data/tertile_cutoff.json`               | ambang kelas: P33 = 3, P67 = 11 titik panas          |
+| `data/grid_kalimantan.csv`               | 232 grid wilayah kajian berukuran 0,5° × 0,5°        |
 
 Kedua model dilatih dengan data latih hasil SMOTENC, pembagian latih–uji
 menggunakan `GroupShuffleSplit` 80:20 berdasarkan identitas grid.
@@ -82,11 +82,11 @@ menggunakan `GroupShuffleSplit` 80:20 berdasarkan identitas grid.
 
 Ditentukan dari jumlah titik panas per grid dalam satu bulan:
 
-| Kategori | Jumlah titik panas | Warna |
-|---|---|---|
-| Rendah | ≤ 3 | hijau |
-| Sedang | 4 – 11 | kuning |
-| Tinggi | ≥ 12 | merah |
+| Kategori | Jumlah titik panas | Warna  |
+| -------- | ------------------ | ------ |
+| Rendah   | ≤ 3                | hijau  |
+| Sedang   | 4 – 11             | kuning |
+| Tinggi   | ≥ 12               | merah  |
 
 ### Sebelas variabel prediktor
 
@@ -98,16 +98,16 @@ jarak ke jalan, tutupan lahan, dan status gambut.
 
 ## Sumber data
 
-| Data | Sumber |
-|---|---|
-| Titik panas | NASA FIRMS (MODIS Terra & Aqua, VIIRS Suomi-NPP) |
-| Batas administratif | GADM versi 4.1 |
-| Ketinggian | Open-Meteo Elevation API (Copernicus DEM GLO-90) |
-| Cuaca historis | Open-Meteo Archive API (reanalisis ECMWF ERA5) |
-| Ramalan cuaca | Open-Meteo Forecast API, hingga 16 hari |
-| Tutupan lahan | ESA WorldCover 10 m 2021 v200 |
-| Lahan gambut | Peta Lahan Gambut Badan Informasi Geospasial (BIG) |
-| Jalan dan perairan | OpenStreetMap melalui Geofabrik |
+| Data                | Sumber                                             |
+| ------------------- | -------------------------------------------------- |
+| Titik panas         | NASA FIRMS (MODIS Terra & Aqua, VIIRS Suomi-NPP)   |
+| Batas administratif | GADM versi 4.1                                     |
+| Ketinggian          | Open-Meteo Elevation API (Copernicus DEM GLO-90)   |
+| Cuaca historis      | Open-Meteo Archive API (reanalisis ECMWF ERA5)     |
+| Ramalan cuaca       | Open-Meteo Forecast API, hingga 16 hari            |
+| Tutupan lahan       | ESA WorldCover 10 m 2021 v200                      |
+| Lahan gambut        | Peta Lahan Gambut Badan Informasi Geospasial (BIG) |
+| Jalan dan perairan  | OpenStreetMap melalui Geofabrik                    |
 
 Hari kering berturut-turut mengikuti definisi indeks Consecutive Dry Days (CDD)
 dari ETCCDI, dengan ambang curah hujan harian di bawah 1 mm.
