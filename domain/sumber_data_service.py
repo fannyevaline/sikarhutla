@@ -6,8 +6,8 @@ import pandas as pd
 import streamlit as st
 
 ROOT = Path(__file__).resolve().parent.parent
-PATH_DATASET = ROOT / "data/04_final/dataset_final.csv"
-PATH_CUTOFF = ROOT / "data/02_grid/tertile_cutoff.json"
+PATH_DATASET = ROOT / "data/dataset_final.csv"
+PATH_CUTOFF = ROOT / "data/tertile_cutoff.json"
 
 KELAS = ["Rendah", "Sedang", "Tinggi"]
 
