@@ -21,8 +21,14 @@ Butuh Python 3.11.
 
 ```bash
 pip install -r requirements.txt
+python database.py      # sekali saja: membentuk data/karhutla.db
 streamlit run app.py
 ```
+
+`data/karhutla.db` tidak disimpan di git. Berkas ini dibentuk dari
+`data/dataset_final.csv` dan `data/grid_kalimantan.csv` oleh `database.py`.
+Menjalankannya ulang akan membangun ulang basis data dari awal, termasuk
+mengosongkan tabel `HASIL_PREDIKSI`.
 
 Aplikasi terbuka di `http://localhost:3000`.
 
@@ -49,6 +55,7 @@ Empat halaman yang memuat sembilan modul fungsional sesuai rancangan pada Bab 3:
 
 ```
 app.py                  titik masuk aplikasi Streamlit
+database.py             membentuk data/karhutla.db dari berkas CSV
 modul/                  satu berkas per halaman
 domain/                 kelas sesuai class diagram (Gambar 3.8)
 data/                   model pre-trained dan dataset
@@ -74,6 +81,8 @@ data dan pelatihan dikerjakan pada proyek terpisah.
 | `data/dataset_final.csv`                 | 14.586 baris, 221 grid, Januari 2021 – Juni 2026     |
 | `data/tertile_cutoff.json`               | ambang kelas: P33 = 3, P67 = 11 titik panas          |
 | `data/grid_kalimantan.csv`               | 232 grid wilayah kajian berukuran 0,5° × 0,5°        |
+| `data/grid_wilayah.csv`                  | provinsi & kabupaten (GADM v4.1) di titik pusat grid |
+| `data/karhutla.db`                       | SQLite (tidak di git): GRID, KONDISI_BULANAN, HASIL_PREDIKSI |
 
 Kedua model dilatih dengan data latih hasil SMOTENC, pembagian latih–uji
 menggunakan `GroupShuffleSplit` 80:20 berdasarkan identitas grid.

@@ -6,11 +6,9 @@ import streamlit as st
 from domain.sumber_data_service import KELAS, SumberDataService
 
 # Warna tanda (peta, batang) dan warna teks yang lebih gelap supaya tetap terbaca.
-WARNA = {"Rendah": "#1f9d55", "Sedang": "#e0a000", "Tinggi": "#e03131",
-         "Tidak ada data": "#c4bdb5"}
+WARNA = {"Rendah": "#1f9d55", "Sedang": "#e0a000", "Tinggi": "#e03131"}
 WARNA_TEKS = {"Rendah": "#137a3f", "Sedang": "#9a6700", "Tinggi": "#b42323"}
 WARNA_LATAR = {"Rendah": "#dcf3e5", "Sedang": "#fff0c4", "Tinggi": "#ffe1e1"}
-URUTAN_PETA = ["Rendah", "Sedang", "Tinggi", "Tidak ada data"]
 
 BULAN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli",
          "Agustus", "September", "Oktober", "November", "Desember"]
@@ -31,7 +29,6 @@ SUMBER_DATA = [
     ("Batas wilayah", "GADM v4.1", "#7048e8"),
 ]
 
-SETENGAH_GRID = 0.25  # grid 0,5 derajat, koordinat di CSV adalah titik pusat
 FONT = "Plus Jakarta Sans, sans-serif"
 
 CSS = """
@@ -42,7 +39,6 @@ CSS = """
     border: none !important; padding: 1.7rem 2rem !important;
 }
 .st-key-bento_hero:hover { transform: none !important; }
-.st-key-bento_hero label p { color: #ffd8c2 !important; font-weight: 600; }
 .bd-label { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em;
     text-transform: uppercase; color: #ffb38a; margin-bottom: 0.35rem; }
 .bd-judul { font-size: 2.2rem; font-weight: 800; color: #fff; margin: 0;
@@ -78,7 +74,6 @@ CSS = """
     margin-top: 0.7rem; padding: 0.55rem 1.1rem; border-radius: 12px;
     border: 1px dashed #d4ccc3; color: #756d66; font-size: 0.85rem; }
 .bd-stat-abu b { color: #4f4842; }
-.st-key-bento_peta [data-testid="stPlotlyChart"] { border-radius: 12px; overflow: hidden; }
 .st-key-bento_statistik [data-testid="stElementContainer"]:has(button) { margin-top: auto; }
 
 .bd-kategori { display: flex; align-items: center; gap: 0.85rem; margin-top: 0.75rem; }
@@ -125,71 +120,6 @@ def _html_hero(n_grid: int, awal: str, akhir: str) -> str:
         'Random Forest dan XGBoost</div>'
         f'<div class="bd-pil-grup">{pil}</div>'
     )
-
-
-def _html_kepala_peta(periode: str) -> str:
-    legenda = "".join(
-        f'<span><i style="background:{WARNA[k]}"></i>{k}</span>' for k in URUTAN_PETA
-    )
-    return (
-        '<div class="bd-kepala">'
-        f'<div><div class="bd-h2">Peta kerawanan {_nama_periode(periode)}</div>'
-        '<div class="bd-kecil">Arahkan kursor ke grid untuk melihat wilayah dan rinciannya; '
-        'gulir untuk zoom</div></div>'
-        f'<div class="bd-legenda">{legenda}</div></div>'
-    )
-
-
-def _nama_wilayah(grid: pd.DataFrame) -> list[str]:
-    """Baris judul tooltip: kabupaten (tebal) + provinsi; kosong kalau nama belum ada."""
-    return [
-        f"<b>{kab}</b><br><span style='color:#756d66'>{prov}</span><br>"
-        if isinstance(kab, str) else ""
-        for kab, prov in zip(grid["kabupaten"], grid["provinsi"])
-    ]
-
-
-def _peta(grid: pd.DataFrame) -> go.Figure:
-    """Satu kotak 0,5 derajat per grid, diwarnai sesuai kelas kerawanan."""
-    fitur = []
-    for i, r in grid.iterrows():
-        x0, x1 = r.grid_lon - SETENGAH_GRID, r.grid_lon + SETENGAH_GRID
-        y0, y1 = r.grid_lat - SETENGAH_GRID, r.grid_lat + SETENGAH_GRID
-        fitur.append({
-            "type": "Feature", "id": i,
-            "geometry": {"type": "Polygon",
-                         "coordinates": [[[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]]},
-        })
-
-    kode = grid["kerawanan"].map({k: i for i, k in enumerate(URUTAN_PETA)})
-    n = len(URUTAN_PETA)
-    skala = []
-    for i, k in enumerate(URUTAN_PETA):
-        skala += [[i / n, WARNA[k]], [(i + 1) / n, WARNA[k]]]
-
-    hotspot = grid["jumlah_hotspot"].map(
-        lambda v: "belum tercatat" if pd.isna(v) else f"{int(v)} titik panas")
-    fig = go.Figure(go.Choroplethmap(
-        geojson={"type": "FeatureCollection", "features": fitur},
-        locations=grid.index, z=kode, zmin=-0.5, zmax=n - 0.5,
-        colorscale=skala, showscale=False,
-        marker={"opacity": 0.85, "line": {"width": 0.8, "color": "#ffffff"}},
-        customdata=list(zip(grid["grid_lat"], grid["grid_lon"], grid["kerawanan"], hotspot,
-                            grid["kerawanan"].map(WARNA), _nama_wilayah(grid))),
-        hovertemplate=("%{customdata[5]}"
-                       "<span style='color:%{customdata[4]}'>●</span> "
-                       "<b>%{customdata[2]}</b> · %{customdata[3]}<br>"
-                       "<span style='color:#8a827a'>%{customdata[0]:.2f}, "
-                       "%{customdata[1]:.2f}</span><extra></extra>"),
-    ))
-    fig.update_layout(
-        map={"style": "carto-positron", "center": {"lat": 0.6, "lon": 114.3}, "zoom": 4.7},
-        height=440, margin={"l": 0, "r": 0, "t": 0, "b": 0},
-        hoverlabel={"bgcolor": "#ffffff", "bordercolor": "#e6dfd7",
-                    "font": {"family": FONT, "color": "#1f1b18", "size": 13}},
-        uirevision="peta",  # zoom/geser tetap saat periode diganti
-    )
-    return fig
 
 
 def _tren(tren: pd.DataFrame, periode: str) -> go.Figure:
@@ -245,7 +175,7 @@ def _tren(tren: pd.DataFrame, periode: str) -> go.Figure:
                "range": [x.min() - pd.Timedelta(days=20), x.max() + pd.Timedelta(days=20)]},
         yaxis={"title": {"text": "Jumlah grid"}, "gridcolor": "#efe9e2", "zeroline": False,
                "rangemode": "tozero"},
-        clickmode="event+select", dragmode=False,
+        dragmode=False,
     )
     return fig
 
@@ -265,12 +195,46 @@ def _html_statistik(periode: str, ringkasan, total: int, n_grid: int) -> str:
         for k in urutan
     )
     return (
-        f'<div class="bd-h2">Kondisi {_nama_periode(periode)}</div>'
-        f'<div class="bd-kecil">Kategori tiap grid menurut jumlah titik panas tercatat, '
-        f'{total} grid</div>'
+        '<div class="bd-label" style="color:#e8590c">Kondisi tercatat terakhir</div>'
+        f'<div class="bd-h2" style="font-size:1.35rem">{_nama_periode(periode)}</div>'
+        f'<div class="bd-kecil">Kategori {total} grid menurut jumlah titik panas yang tercatat, '
+        'bukan hasil prediksi</div>'
         f'{stat}<div class="bd-batang">{batang}</div>'
         f'<div class="bd-stat-abu"><span>Grid tanpa data</span><b>{n_grid - total} grid</b></div>'
     )
+
+
+def _sebaran_provinsi(sebaran: pd.DataFrame) -> go.Figure:
+    """Batang horizontal bertumpuk: jumlah grid per kelas di tiap provinsi.
+    Provinsi diurutkan dari yang grid Tingginya paling banyak (paling atas)."""
+    data = sebaran.assign(_urut=sebaran["Tinggi"] + sebaran["Sedang"] / 1000)
+    data = data.sort_values("_urut")
+    total = data[KELAS].sum(axis=1)
+    fig = go.Figure()
+    for k in ["Tinggi", "Sedang", "Rendah"]:
+        fig.add_bar(
+            y=data.index, x=data[k], name=k, orientation="h",
+            marker={"color": WARNA[k], "line": {"width": 0}},
+            text=[str(v) if v else "" for v in data[k]], textposition="inside",
+            insidetextanchor="middle", textfont={"color": "#ffffff", "size": 12},
+            customdata=list(zip(total, data[k] / total)),
+            hovertemplate=(f"<b>%{{y}}</b><br>{k}: %{{x}} dari %{{customdata[0]}} grid "
+                           "(%{customdata[1]:.0%})<extra></extra>"),
+        )
+    fig.update_layout(
+        barmode="stack", bargap=0.35, barcornerradius=4, height=400,
+        margin={"l": 0, "r": 0, "t": 30, "b": 0},
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        font={"family": FONT, "color": "#756d66", "size": 12},
+        legend={"orientation": "h", "yanchor": "bottom", "y": 1.0, "x": 1, "xanchor": "right",
+                "font": {"color": "#4f4842"}, "traceorder": "normal"},
+        hoverlabel={"bgcolor": "#ffffff", "bordercolor": "#e6dfd7",
+                    "font": {"family": FONT, "color": "#1f1b18", "size": 13}},
+        xaxis={"title": {"text": "Jumlah grid"}, "gridcolor": "#efe9e2", "zeroline": False},
+        yaxis={"tickfont": {"color": "#1f1b18", "size": 13}},
+        dragmode=False,
+    )
+    return fig
 
 
 def _html_kategori(p33: int, p67: int) -> str:
@@ -312,60 +276,51 @@ def _html_sumber() -> str:
     return f'<div class="bd-h2" style="margin-bottom:0.3rem">Sumber data</div>{baris}'
 
 
-def _terapkan_klik_tren(daftar: list[str]) -> None:
-    """Klik batang di grafik tren memilih periodenya. Hanya diterapkan sekali per klik,
-    supaya pilihan lewat dropdown tidak tertimpa pada rerun berikutnya."""
-    pilihan = st.session_state.get("bd_tren")
-    titik = (pilihan or {}).get("selection", {}).get("points", [])
-    if not titik:
-        return
-    periode = str(titik[0]["x"])[:7]
-    if periode in daftar and periode != st.session_state.get("bd_klik_terakhir"):
-        st.session_state.bd_klik_terakhir = periode
-        st.session_state.bd_periode = periode
-
-
 def render(sumber: SumberDataService) -> None:
+    """Ringkasan yang hanya dilihat: selalu periode tercatat terakhir. Pemilihan
+    wilayah dan periode ada di halaman Klasifikasi."""
     daftar = sumber.daftar_periode()
+    periode = daftar[-1]
     cut = sumber.muat_cutoff()
     n_grid = int(cut["n_grid"])
-
-    st.session_state.setdefault("bd_periode", daftar[-1])
-    _terapkan_klik_tren(daftar)
-
-    st.markdown(CSS, unsafe_allow_html=True)
-    with st.container(key="bento_hero"):
-        kiri, kanan = st.columns([3, 1], vertical_alignment="bottom")
-        kiri.markdown(_html_hero(n_grid, daftar[0], daftar[-1]), unsafe_allow_html=True)
-        periode = kanan.selectbox("Periode", daftar[::-1], key="bd_periode",
-                                  format_func=_nama_periode)
-
     ringkasan = sumber.ringkasan_kategori(periode)
     total = int(ringkasan.sum())
 
-    kiri, kanan = st.columns([2, 1], gap="medium")
-    with kiri, st.container(key="bento_peta", height="stretch"):
-        st.markdown(_html_kepala_peta(periode), unsafe_allow_html=True)
-        st.plotly_chart(_peta(sumber.kategori_per_grid(periode)), width="stretch",
-                        config={"scrollZoom": True, "displayModeBar": False})
-    with kanan, st.container(key="bento_statistik", height="stretch"):
+    st.markdown(CSS, unsafe_allow_html=True)
+    with st.container(key="bento_hero"):
+        st.markdown(_html_hero(n_grid, daftar[0], periode), unsafe_allow_html=True)
+
+    kiri, kanan = st.columns([1, 2], gap="medium")
+    with kiri, st.container(key="bento_statistik", height="stretch"):
         st.markdown(_html_statistik(periode, ringkasan, total, n_grid),
                     unsafe_allow_html=True)
         if st.button("Buka klasifikasi", icon=":material/arrow_forward:",
                      type="primary", width="stretch"):
             st.session_state.menu = "Klasifikasi"
             st.rerun()
+    with kanan, st.container(key="bento_provinsi", height="stretch"):
+        st.markdown(
+            f'<div class="bd-h2">Sebaran per provinsi · {_nama_periode(periode)}</div>'
+            '<div class="bd-kecil">Jumlah grid tiap kategori di setiap provinsi, '
+            'diurutkan dari yang paling banyak grid tinggi</div>',
+            unsafe_allow_html=True,
+        )
+        sebaran = sumber.sebaran_provinsi(periode)
+        if sebaran.empty:
+            st.caption("Nama provinsi belum tersedia (data/grid_wilayah.csv tidak ditemukan).")
+        else:
+            st.plotly_chart(_sebaran_provinsi(sebaran), width="stretch",
+                            config={"displayModeBar": False})
 
     with st.container(key="bento_tren"):
         st.markdown(
             '<div class="bd-h2">Tren kerawanan bulanan</div>'
-            '<div class="bd-kecil">Jumlah grid per kategori tiap bulan. '
-            'Angka = puncak grid tinggi tiap tahun. '
-            'Klik batang untuk melihat bulan itu di peta.</div>',
+            '<div class="bd-kecil">Jumlah grid per kategori tiap bulan, '
+            f'{_nama_periode(daftar[0])} sampai {_nama_periode(periode)}. '
+            'Angka = puncak grid tinggi tiap tahun.</div>',
             unsafe_allow_html=True,
         )
         st.plotly_chart(_tren(sumber.tren_kategori()[KELAS], periode), width="stretch",
-                        key="bd_tren", on_select="rerun", selection_mode="points",
                         config={"displayModeBar": False})
 
     kolom = st.columns(3, gap="medium")

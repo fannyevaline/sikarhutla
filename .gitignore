@@ -16,3 +16,6 @@ env/
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# Basis data - dibuat ulang dengan: python database.py
+data/karhutla.db

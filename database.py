@@ -2,7 +2,7 @@
 Membentuk basis data SQLite sesuai ERD pada Gambar 3.7 laporan.
 
 Dijalankan SEKALI dari folder aplikasi:
-    python buat_database.py
+    python database.py
 
 Membaca  : data/dataset_final.csv, data/grid_kalimantan.csv
 Menghasil: data/karhutla.db  berisi tiga tabel

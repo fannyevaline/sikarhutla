@@ -2,7 +2,7 @@
 import streamlit as st
 
 from domain.sumber_data_service import SumberDataService
-from modul import beranda
+from modul import beranda, klasifikasi
 
 st.set_page_config(page_title="SiKarhutla", page_icon="🔥", layout="wide")
 
@@ -13,15 +13,6 @@ MODUL = {
     "Performa Model": ":material/insights:",
     "Bantuan": ":material/help:",
 }
-
-MODUL_KLASIFIKASI = [
-    "Peta Interaktif Kerawanan",
-    "Pemilihan Wilayah dan Periode",
-    "Klasifikasi Kerawanan",
-    "Hasil Klasifikasi dan Confidence",
-    "Rincian Variabel Prediktor",
-    "Informasi Periode Mendatang",
-]
 
 CSS = """
 <style>
@@ -124,9 +115,8 @@ pilihan = sidebar()
 
 if pilihan == "Beranda":
     beranda.render(sumber)
+elif pilihan == "Klasifikasi":
+    klasifikasi.render(sumber)
 else:
     st.title(pilihan)
     st.info("Halaman ini belum dibangun.")
-    if pilihan == "Klasifikasi":
-        st.markdown("Modul yang akan ada di halaman ini:\n\n"
-                    + "\n".join(f"{i}. {m}" for i, m in enumerate(MODUL_KLASIFIKASI, 2)))
