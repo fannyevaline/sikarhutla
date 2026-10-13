@@ -27,8 +27,10 @@ streamlit run app.py
 
 `data/karhutla.db` tidak disimpan di git. Berkas ini dibentuk dari
 `data/dataset_final.csv` dan `data/grid_kalimantan.csv` oleh `database.py`.
-Menjalankannya ulang akan membangun ulang basis data dari awal, termasuk
-mengosongkan tabel `HASIL_PREDIKSI`.
+Kalau `HASIL_PREDIKSI` sudah berisi riwayat klasifikasi, `database.py` menolak
+berjalan supaya riwayat tidak terhapus tanpa sengaja. Untuk tetap membangun ulang,
+matikan aplikasi lalu jalankan `python database.py --paksa`; basis data lama
+disalin dulu ke `data/karhutla_cadangan_<waktu>.db`.
 
 Aplikasi terbuka di `http://localhost:3000`.
 

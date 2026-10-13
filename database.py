@@ -13,8 +13,17 @@ Menghasil: data/karhutla.db  berisi tiga tabel
 
 Script ini TIDAK mengubah berkas CSV mana pun dan TIDAK menyentuh model.
 Menjalankannya ulang akan membangun ulang ketiga tabel dari awal.
+
+Pengaman: kalau HASIL_PREDIKSI sudah berisi riwayat klasifikasi, script menolak
+berjalan. Untuk tetap membangun ulang, jalankan:
+    python database.py --paksa
+Basis data lama lebih dulu disalin ke data/karhutla_cadangan_<waktu>.db.
 """
+import argparse
+import shutil
 import sqlite3
+import sys
+from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
@@ -90,7 +99,38 @@ def buat_grid_id(lat, lon) -> str:
     return f"{round(float(lat), 2)}_{round(float(lon), 2)}"
 
 
-def main() -> None:
+def jumlah_hasil_tersimpan() -> int:
+    """Banyak baris di HASIL_PREDIKSI pada basis data yang sudah ada (0 kalau belum ada)."""
+    if not PATH_DB.exists():
+        return 0
+    kon = sqlite3.connect(f"file:{PATH_DB}?mode=ro", uri=True)
+    try:
+        return kon.execute("SELECT COUNT(*) FROM HASIL_PREDIKSI").fetchone()[0]
+    except sqlite3.OperationalError:  # tabel belum ada
+        return 0
+    finally:
+        kon.close()
+
+
+def amankan_riwayat(paksa: bool) -> None:
+    """Hentikan script kalau ada riwayat klasifikasi, kecuali --paksa (dengan cadangan)."""
+    n = jumlah_hasil_tersimpan()
+    if n == 0:
+        return
+    if not paksa:
+        print(f"DIBATALKAN: HASIL_PREDIKSI berisi {n:,} riwayat klasifikasi yang akan "
+              f"terhapus kalau basis data dibangun ulang.\n"
+              f"Tidak ada yang diubah. Untuk tetap membangun ulang (riwayat disalin "
+              f"dulu ke cadangan), jalankan:\n    python database.py --paksa")
+        sys.exit(1)
+    cadangan = PATH_DB.with_name(f"karhutla_cadangan_{datetime.now():%Y%m%d_%H%M%S}.db")
+    shutil.copy2(PATH_DB, cadangan)
+    print(f"Cadangan dibuat: {cadangan.relative_to(ROOT)} ({n:,} riwayat klasifikasi)")
+
+
+def main(paksa: bool = False) -> None:
+    amankan_riwayat(paksa)
+
     print("Membaca berkas sumber...")
     df = pd.read_csv(PATH_DATASET)
     grid_resmi = pd.read_csv(PATH_GRID)
@@ -121,7 +161,13 @@ def main() -> None:
     tabel_kondisi = df[["grid_id", "tahun_bulan"] + KOLOM_DINAMIS].copy()
 
     # --- tulis ke SQLite ---
-    PATH_DB.unlink(missing_ok=True)
+    try:
+        PATH_DB.unlink(missing_ok=True)
+    except PermissionError:
+        print(f"GAGAL: {PATH_DB.relative_to(ROOT)} sedang dipakai program lain "
+              f"(biasanya aplikasi Streamlit). Matikan aplikasinya dulu, lalu ulangi.\n"
+              f"Tidak ada yang diubah.")
+        sys.exit(1)
     with sqlite3.connect(PATH_DB) as kon:
         kon.executescript(SKEMA)
         kon.execute("PRAGMA foreign_keys = ON")
@@ -165,4 +211,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Bentuk data/karhutla.db dari berkas CSV.")
+    parser.add_argument("--paksa", action="store_true",
+                        help="bangun ulang walau HASIL_PREDIKSI berisi riwayat "
+                             "(riwayat disalin ke cadangan lebih dulu)")
+    main(parser.parse_args().paksa)
