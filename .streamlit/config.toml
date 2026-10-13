@@ -9,3 +9,6 @@ textColor = "#1a1a1a"
 backgroundColor = "#171615"
 secondaryBackgroundColor = "#262423"
 textColor = "#e8e4df"
+
+[server]
+port = 3000

@@ -24,9 +24,9 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Aplikasi terbuka di `http://localhost:8501`.
+Aplikasi terbuka di `http://localhost:3000`.
 
-Salin `env.example` menjadi `.env` dan isi kunci API yang diperlukan untuk
+Salin `.env.example` menjadi `.env` dan isi kunci API yang diperlukan untuk
 pemanggilan data cuaca periode mendatang. Tanpa berkas itu, modul historis tetap
 berjalan normal.
 
