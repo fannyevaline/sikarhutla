@@ -6,10 +6,11 @@ from modul import beranda, klasifikasi
 
 st.set_page_config(page_title="SiKarhutla", page_icon="🔥", layout="wide")
 
-# Empat halaman (lihat catatan.md); nama -> ikon Material
+# Lima halaman; nama -> ikon Material
 MODUL = {
     "Beranda": ":material/home:",
     "Klasifikasi": ":material/travel_explore:",
+    "Simulasi": ":material/tune:",
     "Performa Model": ":material/insights:",
     "Bantuan": ":material/help:",
 }
@@ -119,4 +120,4 @@ elif pilihan == "Klasifikasi":
     klasifikasi.render(sumber)
 else:
     st.title(pilihan)
-    st.info("Halaman ini belum dibangun.")
+    st.info("Modul ini belum dibangun.")
