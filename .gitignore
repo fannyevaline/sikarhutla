@@ -19,3 +19,6 @@ desktop.ini
 
 # Basis data - dibuat ulang dengan: python database.py
 data/karhutla*.db
+
+# Cache cuaca harian Open-Meteo (dibuat otomatis oleh aplikasi)
+.cache/

@@ -16,17 +16,32 @@ class HasilPrediksi:
 
 
 @dataclass
+class KomposisiCuaca:
+    """Asal deret cuaca harian untuk bulan yang tidak ada di basis data.
+    Ketiga bagian berurutan: observasi, lalu ramalan, lalu klimatologi."""
+    hari_observasi: int
+    hari_ramalan: int
+    hari_klimatologi: int
+
+    @property
+    def n_hari(self) -> int:
+        return self.hari_observasi + self.hari_ramalan + self.hari_klimatologi
+
+
+@dataclass
 class KondisiBulanan:
-    """Data dinamis satu grid pada satu bulan."""
-    kondisi_id: int
+    """Data dinamis satu grid pada satu bulan. Untuk bulan di luar basis data,
+    kondisi_id, jumlah_hotspot, dan kerawanan bernilai None, dan komposisi terisi."""
+    kondisi_id: int | None
     tahun_bulan: str
     curah_hujan_mm: float
     suhu_maks_c: float
     kelembapan_persen: float
     angin_maks_kmh: float
     hari_kering_maks: int
-    jumlah_hotspot: int
-    kerawanan: str
+    jumlah_hotspot: int | None
+    kerawanan: str | None
+    komposisi: KomposisiCuaca | None = None
     hasil: list[HasilPrediksi] = field(default_factory=list)
 
 
