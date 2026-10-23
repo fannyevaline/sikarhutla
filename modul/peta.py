@@ -111,7 +111,8 @@ def render(sumber: SumberDataService, periode: str, grid_terpilih: str,
         sub = (f"Kategori belum tercatat, jadi warna = prediksi {model} (F1-macro "
                "tertinggi). Arahkan kursor ke grid untuk melihat kedua model.")
     else:
-        sub = "Kategori bulan ini belum tercatat. Klik grid untuk melihat hasil klasifikasinya."
+        sub = ("Kategori bulan ini belum tercatat dan data cuacanya belum bisa diambil, "
+               "jadi peta belum bisa diwarnai.")
     st.markdown(f'<div class="kl-kecil" style="margin-bottom:0.6rem">{sub}</div>',
                 unsafe_allow_html=True)
     peta = folium.Map(location=TENGAH, zoom_start=6, tiles=TILE, attr=ATRIBUSI,

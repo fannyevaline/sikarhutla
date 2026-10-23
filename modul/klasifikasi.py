@@ -2,7 +2,7 @@
 
 2. Peta interaktif kerawanan        (modul/peta.py)
 3. Pemilihan wilayah dan periode
-4. Klasifikasi kerawanan            (otomatis setiap pilihan berubah)
+4. Klasifikasi kerawanan            (hanya saat tombol Jalankan Klasifikasi ditekan)
 5. Hasil klasifikasi dan confidence
 6. Rincian variabel prediktor       (modul/rincian_variabel.py)
 7. Informasi periode mendatang      (modul/periode_mendatang.py)
@@ -79,7 +79,6 @@ STATUS = {  # label chip, warna teks, warna latar
 }
 AKHIRAN_BULAN = {"historis": "", "selesai": " · di luar basis data",
                  "berjalan": " · berjalan", "mendatang": " · mendatang"}
-MAKS_TERSIMPAN = 60  # hasil per (grid, periode) yang diingat selama sesi
 
 
 def _label_grid(baris) -> str:
@@ -153,29 +152,13 @@ def _render_pilihan(sumber: SumberDataService, label: dict, daftar: list[str]) -
                     sumber.status_periode(f"{tahun}-{m:02d}")])
 
 
-# ---- 4. Klasifikasi (otomatis) --------------------------------------------------
-
-def _klasifikasi(sumber: SumberDataService, grid_id: str, periode: str) -> Grid | None:
-    """Jalankan kedua model sekali untuk tiap (grid, periode) dalam satu sesi.
-    Kembali ke pilihan yang sama memakai hasil yang sudah ada, jadi tidak dijalankan
-    dan disimpan ulang. Melempar GagalAmbilCuaca kalau Open-Meteo gagal."""
-    tersimpan: dict = st.session_state.setdefault("kl_tersimpan", {})
-    kunci = (grid_id, periode)
-    if kunci not in tersimpan:
-        teks = ("Menjalankan Random Forest dan XGBoost..."
-                if sumber.status_periode(periode) == "historis"
-                else "Menyusun cuaca dari Open-Meteo dan menjalankan kedua model...")
-        with st.spinner(teks):
-            tersimpan[kunci] = ModulKlasifikasi(sumber).klasifikasi(grid_id, periode)
-        if len(tersimpan) > MAKS_TERSIMPAN:
-            tersimpan.pop(next(iter(tersimpan)))
-    return tersimpan[kunci]
-
+# ---- 4. Klasifikasi (tombol) ----------------------------------------------------
 
 def _prediksi_peta(sumber: SumberDataService, periode: str, status: str):
-    """Prediksi kedua model untuk semua grid, hanya untuk bulan di luar basis data.
-    Pertama kali sebuah bulan dibuka perlu waktu (data cuaca 221 grid); sesudahnya
-    diambil dari cache. None kalau Open-Meteo gagal."""
+    """Prediksi kedua model untuk semua grid, hanya untuk bulan di luar basis data,
+    supaya peta langsung berwarna saat bulannya dipilih. Tidak disimpan ke
+    HASIL_PREDIKSI. Pertama kali sebuah bulan dibuka perlu waktu (data cuaca 221
+    grid dari Open-Meteo); sesudahnya diambil dari cache. None kalau Open-Meteo gagal."""
     if status == "historis":
         return None
     kabar = st.empty()
@@ -189,6 +172,27 @@ def _prediksi_peta(sumber: SumberDataService, periode: str, status: str):
         return None
     kabar.empty()
     return prediksi
+
+
+def _minta_jalankan() -> None:
+    """Callback tombol; modelnya dijalankan di render()."""
+    st.session_state.kl_jalankan = True
+
+
+def _jalankan(sumber: SumberDataService, grid_id: str, periode: str, status: str) -> None:
+    """Jalankan kedua model untuk grid dan periode terpilih; hanya dipanggil saat
+    tombol ditekan. Periode di basis data disimpan ke HASIL_PREDIKSI.
+    Hasilnya bertahan di kl_hasil sampai tombol ditekan lagi."""
+    hasil = {"grid_id": grid_id, "periode": periode, "status": status,
+             "grid": None, "galat": None}
+    teks = ("Menjalankan Random Forest dan XGBoost..." if status == "historis"
+            else "Menyusun cuaca dari Open-Meteo dan menjalankan kedua model...")
+    try:
+        with st.spinner(teks):
+            hasil["grid"] = ModulKlasifikasi(sumber).klasifikasi(grid_id, periode)
+    except GagalAmbilCuaca as e:
+        hasil["galat"] = str(e)
+    st.session_state.kl_hasil = hasil
 
 
 # ---- 5. Hasil klasifikasi dan confidence ------------------------------------------
@@ -227,28 +231,38 @@ def _html_ringkas(grid: Grid) -> str:
     return f'<div class="kl-ringkas">{isi}</div>'
 
 
-def _render_hasil(sumber: SumberDataService, grid_id: str, periode: str,
-                  status: str) -> Grid | None:
-    chip, teks, latar = STATUS[status]
+def _render_hasil(label: dict, grid_id: str, periode: str) -> dict | None:
+    """Tampilkan hasil tombol terakhir. Hasil tetap bertahan walau pilihan sudah
+    berubah, dengan catatan bahwa itu hasil pilihan sebelumnya."""
+    hasil = st.session_state.get("kl_hasil")
+    if hasil is None:
+        st.markdown('<div class="kl-garis"></div><div class="kl-kosong">'
+                    '<div class="kl-kosong-judul">Belum ada hasil</div>Pilih wilayah dan '
+                    'periode, lalu tekan <b>Jalankan Klasifikasi</b>.</div>',
+                    unsafe_allow_html=True)
+        return None
+    chip, teks, latar = STATUS[hasil["status"]]
     st.markdown(
         '<div class="kl-garis"></div><div class="kl-kepala">'
-        f'<div class="kl-h2">Hasil · {_nama_periode(periode)}</div>'
+        f'<div class="kl-h2">Hasil · {_nama_periode(hasil["periode"])}</div>'
         f'<span class="kl-chip" style="color:{teks};background:{latar}"><i></i>{chip}</span>'
         '</div>', unsafe_allow_html=True)
-    try:
-        hasil = _klasifikasi(sumber, grid_id, periode)
-    except GagalAmbilCuaca as e:
+    if (hasil["grid_id"], hasil["periode"]) != (grid_id, periode):
+        st.markdown(f'<div class="kl-kecil">Hasil untuk {label.get(hasil["grid_id"])}. '
+                    'Pilihan sudah berubah; tekan <b>Jalankan Klasifikasi</b> untuk '
+                    'memperbarui.</div>', unsafe_allow_html=True)
+    if hasil["galat"]:
         st.markdown('<div class="kl-kosong"><div class="kl-kosong-judul">Data cuaca gagal '
-                    f'diambil</div>{e}</div>', unsafe_allow_html=True)
-        st.button("Coba lagi", icon=":material/refresh:", width="stretch")
+                    f'diambil</div>{hasil["galat"]}<br>Tekan <b>Jalankan Klasifikasi</b> '
+                    'untuk mencoba lagi.</div>', unsafe_allow_html=True)
         return None
-    if hasil is None:
+    if hasil["grid"] is None:
         st.markdown('<div class="kl-kosong"><div class="kl-kosong-judul">Tidak ada data'
                     '</div>Grid ini tidak punya data pada periode tersebut.</div>',
                     unsafe_allow_html=True)
         return None
-    kartu = "".join(_html_hasil(h) for h in hasil.kondisi[0].hasil)
-    st.markdown(f'<div class="kl-kartu-grup">{kartu}</div>{_html_ringkas(hasil)}',
+    kartu = "".join(_html_hasil(h) for h in hasil["grid"].kondisi[0].hasil)
+    st.markdown(f'<div class="kl-kartu-grup">{kartu}</div>{_html_ringkas(hasil["grid"])}',
                 unsafe_allow_html=True)
     return hasil
 
@@ -274,13 +288,17 @@ def render(sumber: SumberDataService) -> None:
     st.markdown(
         '<div class="kl-label">Klasifikasi</div>'
         '<div class="kl-judul">Klasifikasi kerawanan per grid</div>'
-        '<div class="kl-sub">Klik grid pada peta atau pilih wilayah dan periode. Random Forest '
-        'dan XGBoost langsung dijalankan.</div>',
+        '<div class="kl-sub">Klik grid pada peta atau pilih wilayah dan periode, lalu tekan '
+        'Jalankan Klasifikasi untuk menjalankan Random Forest dan XGBoost.</div>',
         unsafe_allow_html=True,
     )
     if "kl_pesan" in st.session_state:
         teks, ikon = st.session_state.pop("kl_pesan")
         st.toast(teks, icon=ikon)
+
+    # 4. Klasifikasi - hanya pada rerun yang dipicu tombol
+    if st.session_state.pop("kl_jalankan", False):
+        _jalankan(sumber, st.session_state.kl_grid, periode, status)
 
     kiri, kanan = st.columns([3, 2], gap="medium")
 
@@ -296,17 +314,20 @@ def render(sumber: SumberDataService) -> None:
     with kanan, st.container(key="bento_kl_panel", height="stretch"):
         # 3. Pemilihan wilayah dan periode
         _render_pilihan(sumber, label, daftar)
-        # 4 & 5. Klasifikasi otomatis, lalu hasil kedua model berdampingan
-        hasil = _render_hasil(sumber, st.session_state.kl_grid, periode, status)
+        st.button("Jalankan Klasifikasi", type="primary", icon=":material/play_arrow:",
+                  width="stretch", on_click=_minta_jalankan)
+        # 5. Hasil kedua model berdampingan (dari tombol terakhir)
+        hasil = _render_hasil(label, st.session_state.kl_grid, periode)
     if hasil is None:
         return
+    grid = hasil["grid"]
 
     # 6. Rincian variabel prediktor
     with st.container(key="bento_kl_variabel"):
-        rincian_variabel.render(sumber, hasil)
+        rincian_variabel.render(sumber, grid)
 
     # 7. Informasi periode mendatang - hanya bila cuaca tidak dari basis data
-    komposisi = hasil.kondisi[0].komposisi
+    komposisi = grid.kondisi[0].komposisi
     if komposisi is not None:
         with st.container(key="bento_kl_mendatang"):
-            periode_mendatang.render(komposisi, periode, status)
+            periode_mendatang.render(komposisi, hasil["periode"], hasil["status"])
