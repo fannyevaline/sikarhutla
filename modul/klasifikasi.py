@@ -163,7 +163,9 @@ def _prediksi_peta(sumber: SumberDataService, periode: str, status: str):
         return None
     kabar = st.empty()
     try:
-        with st.spinner(f"Menyusun cuaca 221 grid untuk {_nama_periode(periode)}..."):
+        with st.spinner(f"Menyusun cuaca dan menghitung prediksi kedua model untuk 221 grid "
+                        f"({_nama_periode(periode)}). Pertama kali dibuka bisa beberapa "
+                        "menit, mohon tunggu..."):
             prediksi = ModulKlasifikasi(sumber).klasifikasi_bulan(
                 periode, kabar=lambda teks: kabar.caption(teks))
     except GagalAmbilCuaca as e:

@@ -29,7 +29,9 @@ URL_ARCHIVE = "https://archive-api.open-meteo.com/v1/archive"
 URL_FORECAST = "https://api.open-meteo.com/v1/forecast"
 VAR_HARIAN = ["precipitation_sum", "temperature_2m_max",
               "relative_humidity_2m_mean", "wind_speed_10m_max"]
-KLIMATOLOGI = (date(2021, 1, 1), date(2026, 6, 30))  # rentang dataset
+# Dipatok sama dengan periode data pelatihan (Jan 2021 - Jun 2026) supaya baseline
+# klimatologi setara dengan kondisi yang dipelajari model.
+KLIMATOLOGI = (date(2021, 1, 1), date(2026, 6, 30))
 JANGKAUAN_RAMALAN = 16  # hari
 AMBANG_KERING_MM = 1.0
 

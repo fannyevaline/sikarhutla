@@ -34,8 +34,8 @@ disalin dulu ke `data/karhutla_cadangan_<waktu>.db`.
 
 Aplikasi terbuka di `http://localhost:3000`.
 
-Salin `.env.example` menjadi `.env` dan isi kunci API yang diperlukan untuk
-pemanggilan data cuaca periode mendatang. Tanpa berkas itu, modul historis tetap
+Aplikasi tidak memerlukan API key. Data cuaca bulan mendatang diambil dari
+Open-Meteo, yang terbuka tanpa kunci; tanpa koneksi internet, bulan historis tetap
 berjalan normal.
 
 ---
