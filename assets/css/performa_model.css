@@ -13,6 +13,8 @@
 .st-key-pf_tab [data-testid="stTab"] p { font-size: 0.95rem; }
 .st-key-pf_tab .react-aria-SelectionIndicator { display: none; }
 
+.pf-ket-tab { margin-bottom: 0.2rem; }
+
 /* ---- tabel metrik (garis bawaan tabel markdown Streamlit dimatikan) ---- */
 .pf-gulir { overflow-x: auto; margin-top: 0.8rem; }
 .pf-tabel { width: 100%; border-collapse: collapse; font-size: 0.9rem; color: #1f1b18;

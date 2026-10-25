@@ -11,8 +11,11 @@ import streamlit as st
 
 from domain import open_meteo
 from domain.grid import Grid, HasilPrediksi, KomposisiCuaca, KondisiBulanan
-from domain.konstanta import (KELAS, PATH_CONFUSION_MATRIX, PATH_CUTOFF, PATH_DB,
-                              PATH_METRIK_PER_KELAS, PATH_METRIK_RINGKASAN, PATH_PERBANDINGAN, PATH_WILAYAH,
+from domain.konstanta import (KELAS, PATH_CONFUSION_MATRIX,
+                              PATH_CONFUSION_MATRIX_EKSTERNAL, PATH_CUTOFF, PATH_DB,
+                              PATH_METRIK_EKSTERNAL_PER_KELAS,
+                              PATH_METRIK_EKSTERNAL_RINGKASAN, PATH_METRIK_PER_KELAS,
+                              PATH_METRIK_RINGKASAN, PATH_PERBANDINGAN, PATH_WILAYAH,
                               SKENARIO_FINAL, UKURAN_GRID)
 
 WIB = timezone(timedelta(hours=7))
@@ -102,6 +105,32 @@ class SumberDataService:
         df = pd.read_csv(PATH_CONFUSION_MATRIX)
         pilih = df[(df["Skenario"] == skenario) & (df["Model"] == model)]
         return pilih.set_index("Kelas_sebenarnya").reindex(KELAS)
+
+    # Pengujian eksternal: berkasnya tidak memakai kolom Skenario, melainkan Periode
+    # ("Keseluruhan" atau "YYYY-MM"); confusion matrix-nya hanya untuk keseluruhan periode.
+
+    def berkas_eksternal_kurang(self) -> list[str]:
+        """Nama berkas pengujian eksternal yang belum ada (kosong = lengkap)."""
+        return [p.name for p in (PATH_METRIK_EKSTERNAL_RINGKASAN,
+                                 PATH_METRIK_EKSTERNAL_PER_KELAS,
+                                 PATH_CONFUSION_MATRIX_EKSTERNAL) if not p.exists()]
+
+    def metrik_eksternal_ringkasan(self) -> pd.DataFrame:
+        """Metrik keseluruhan pengujian eksternal, per periode dan model."""
+        return pd.read_csv(PATH_METRIK_EKSTERNAL_RINGKASAN)
+
+    def metrik_eksternal_per_kelas(self, periode: str, model: str) -> pd.DataFrame:
+        """Metrik tiap kelas pengujian eksternal untuk satu periode dan model
+        (indeks = KELAS)."""
+        df = pd.read_csv(PATH_METRIK_EKSTERNAL_PER_KELAS)
+        pilih = df[(df["Periode"] == periode) & (df["Model"] == model)]
+        return pilih.set_index("Kelas").reindex(KELAS)
+
+    def confusion_matrix_eksternal(self, model: str) -> pd.DataFrame:
+        """Confusion matrix pengujian eksternal satu model, seluruh periode.
+        Baris = kelas sebenarnya (urut KELAS)."""
+        df = pd.read_csv(PATH_CONFUSION_MATRIX_EKSTERNAL)
+        return df[df["Model"] == model].set_index("Kelas_sebenarnya").reindex(KELAS)
 
     # ---- ringkasan untuk Beranda -------------------------------------------------
 
