@@ -26,6 +26,8 @@ from modul.tampilan import WARNA, WARNA_LATAR, angka, nama_periode
 
 PERIODE_EKSTERNAL = "Juli–September 2026"  # untuk keterangan saat berkasnya belum ada
 KESELURUHAN = "Keseluruhan"  # nilai kolom Periode untuk gabungan seluruh bulan
+LABEL_FINAL_INTERNAL = "Model final"
+LABEL_FINAL_EKSTERNAL = "Model final (ditetapkan dari evaluasi internal)"
 
 
 def _persen(x: float) -> str:
@@ -78,7 +80,7 @@ def _nama_skenario(skenario: str) -> str:
 
 def _html_nama(b) -> str:
     """Nama model + keterangan (skenario atau periode), dengan chip "Model final"."""
-    chip = '<span class="pf-chip">Model final</span>' if b.Final else ""
+    chip = f'<span class="pf-chip">{b.Label_final}</span>' if b.Final else ""
     return (f'<div class="pf-nama">{b.Model}{chip}</div>'
             f'<div class="pf-skenario">{b.Keterangan}</div>')
 
@@ -87,6 +89,7 @@ def _html_nama(b) -> str:
 # Setiap baris ringkasan diberi tiga kolom tampilan:
 #   Keterangan  teks di bawah nama model (skenario / periode)
 #   Final       True bila baris ini model final
+#   Label_final teks chip untuk baris model final
 #   N_Tinggi    jumlah data kelas Tinggi, dibaca dari CSV per kelas
 
 def _baris_internal(sumber: SumberDataService, model_final: str) -> pd.DataFrame:
@@ -94,6 +97,7 @@ def _baris_internal(sumber: SumberDataService, model_final: str) -> pd.DataFrame
     return r.assign(
         Keterangan=r["Skenario"].map(_nama_skenario),
         Final=(r["Skenario"] == SKENARIO_FINAL) & (r["Model"] == model_final),
+        Label_final=LABEL_FINAL_INTERNAL,
         N_Tinggi=[sumber.metrik_per_kelas(s, m).loc["Tinggi", "Jumlah_data"]
                   for s, m in zip(r["Skenario"], r["Model"])],
     )
@@ -113,6 +117,7 @@ def _baris_eksternal(sumber: SumberDataService, r: pd.DataFrame, model_final: st
     return r.assign(
         Keterangan=[rentang if p == KESELURUHAN else nama_periode(p) for p in r["Periode"]],
         Final=r["Model"] == model_final,
+        Label_final=LABEL_FINAL_EKSTERNAL,
         N_Tinggi=[sumber.metrik_eksternal_per_kelas(p, m).loc["Tinggi", "Jumlah_data"]
                   for p, m in zip(r["Periode"], r["Model"])],
     )
@@ -120,11 +125,29 @@ def _baris_eksternal(sumber: SumberDataService, r: pd.DataFrame, model_final: st
 
 # ---- 1. tabel ringkasan ------------------------------------------------------------
 
+def _terbaik(baris: pd.DataFrame, kolom: dict[str, Kolom]) -> dict:
+    """Nilai terbaik tiap kolom (terbesar atau terkecil, sesuai Kolom.terbaik)."""
+    return {c: baris[c].max() if k.terbaik == "max" else baris[c].min()
+            for c, k in kolom.items()}
+
+
+def _unggul_semua(baris: pd.DataFrame, kolom: dict[str, Kolom] = KOLOM_RINGKASAN) -> str | None:
+    """Nama model yang sendirian memegang nilai terbaik di setiap kolom, atau None.
+    Hanya membandingkan nilai yang sudah ada di CSV."""
+    terbaik = _terbaik(baris, kolom)
+    pemenang = set()
+    for c in kolom:
+        model = baris.loc[baris[c] == terbaik[c], "Model"]
+        if len(model) != 1:
+            return None
+        pemenang.add(model.iloc[0])
+    return pemenang.pop() if len(pemenang) == 1 else None
+
+
 def _html_ringkasan(baris: pd.DataFrame, judul: str, ket: str,
-                    kolom: dict[str, Kolom] = KOLOM_RINGKASAN) -> str:
+                    kolom: dict[str, Kolom] = KOLOM_RINGKASAN, catatan: str = "") -> str:
     kepala = "".join(f"<th>{k.judul}<small>{k.ket}</small></th>" for k in kolom.values())
-    terbaik = {c: baris[c].max() if k.terbaik == "max" else baris[c].min()
-               for c, k in kolom.items()}
+    terbaik = _terbaik(baris, kolom)
     isi = ""
     for b in baris.itertuples():
         sel = "".join(
@@ -136,6 +159,7 @@ def _html_ringkasan(baris: pd.DataFrame, judul: str, ket: str,
         f'<div class="kl-kecil">{ket} Angka tebal = terbaik di kolomnya.</div>'
         f'<div class="pf-gulir"><table class="pf-tabel"><thead><tr>'
         f'<th>Model</th>{kepala}</tr></thead><tbody>{isi}</tbody></table></div>'
+        + (f'<div class="pf-catatan">{catatan}</div>' if catatan else "")
     )
 
 
@@ -261,6 +285,7 @@ def _html_cara_membaca(per_kelas: pd.DataFrame) -> str:
         'tetap adil pada data yang timpang karena memperhitungkan semua sel confusion '
         'matrix.</div>'
         '<div><b>Model final</b> dipilih dari F1 macro tertinggi pada pengujian internal, '
+        f'skenario {_nama_skenario(SKENARIO_FINAL)}. Kedua berkas .pkl yang diuji adalah '
         f'skenario {_nama_skenario(SKENARIO_FINAL)}.</div>'
         '</div>'
     )
@@ -343,10 +368,17 @@ def _render_eksternal(sumber: SumberDataService, model_final: str,
     if not per_bulan.empty:
         tambahan = (_html_ringkasan(per_bulan, "Rincian per bulan",
                                     "Pelengkap tabel keseluruhan di atas.", KOLOM_PER_BULAN),)
+    catatan = ""
+    unggul = _unggul_semua(keseluruhan)
+    if unggul and unggul != model_final:
+        catatan = (f"Pada pengujian eksternal (keseluruhan {rentang}), <b>{unggul}</b> "
+                   "memperoleh nilai lebih baik pada seluruh metrik, sehingga keunggulan "
+                   f"{model_final} pada evaluasi internal tidak berlaku pada periode ini.")
     _render_isi(
         "eksternal",
         [_html_ringkasan(keseluruhan, f"Keseluruhan · {rentang}",
-                         "Kedua model pada seluruh periode pengujian eksternal.")],
+                         "Kedua model pada seluruh periode pengujian eksternal.",
+                         catatan=catatan)],
         _html_per_kelas(per_kelas, model_final, ket),
         _html_confusion(sumber.confusion_matrix_eksternal(model_final), model_final, ket),
         _html_bahaya(keseluruhan, _catatan_eksternal(internal, eksternal)),
