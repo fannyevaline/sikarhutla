@@ -11,8 +11,8 @@ import streamlit as st
 
 from domain import open_meteo
 from domain.grid import Grid, HasilPrediksi, KomposisiCuaca, KondisiBulanan
-from domain.konstanta import (KELAS, PATH_CUTOFF, PATH_DB, PATH_METRIK_PER_KELAS,
-                              PATH_METRIK_RINGKASAN, PATH_PERBANDINGAN, PATH_WILAYAH,
+from domain.konstanta import (KELAS, PATH_CONFUSION_MATRIX, PATH_CUTOFF, PATH_DB,
+                              PATH_METRIK_PER_KELAS, PATH_METRIK_RINGKASAN, PATH_PERBANDINGAN, PATH_WILAYAH,
                               SKENARIO_FINAL, UKURAN_GRID)
 
 WIB = timezone(timedelta(hours=7))
@@ -94,6 +94,14 @@ class SumberDataService:
         df = pd.read_csv(PATH_METRIK_PER_KELAS)
         pilih = df[(df["Skenario"] == skenario) & (df["Model"] == model)]
         return pilih.set_index("Kelas").reindex(KELAS)
+
+    def confusion_matrix(self, skenario: str, model: str) -> pd.DataFrame:
+        """Confusion matrix satu skenario dan model dari confusion_matrix.csv.
+        Baris = kelas sebenarnya (urut KELAS); kolom Prediksi_Rendah, Prediksi_Sedang,
+        Prediksi_Tinggi, dan Jumlah_data."""
+        df = pd.read_csv(PATH_CONFUSION_MATRIX)
+        pilih = df[(df["Skenario"] == skenario) & (df["Model"] == model)]
+        return pilih.set_index("Kelas_sebenarnya").reindex(KELAS)
 
     # ---- ringkasan untuk Beranda -------------------------------------------------
 

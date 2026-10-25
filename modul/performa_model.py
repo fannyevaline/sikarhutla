@@ -12,7 +12,7 @@ import streamlit as st
 
 from domain.konstanta import SKENARIO_FINAL
 from domain.sumber_data_service import SumberDataService
-from modul.tampilan import WARNA, angka
+from modul.tampilan import WARNA, WARNA_LATAR, angka
 
 # kolom CSV -> (judul kolom, keterangan kecil di bawah judul)
 KOLOM_RINGKASAN = {
@@ -88,6 +88,39 @@ def _html_per_kelas(per_kelas: pd.DataFrame, model_final: str) -> str:
         f'<th>Tingkat<small>kesalahan</small></th><th>Jumlah<small>data</small></th>'
         f'</tr></thead>'
         f'<tbody>{baris}</tbody></table></div>'
+    )
+
+
+# ---- 4. confusion matrix, model final -----------------------------------------------
+
+def _kelas_sel(sebenarnya: str, prediksi: str) -> str:
+    """Kelas CSS sel: diagonal = benar; Tinggi diprediksi Rendah = kesalahan berbahaya."""
+    if sebenarnya == prediksi:
+        return "pf-cm-sel pf-cm-benar"
+    if (sebenarnya, prediksi) == ("Tinggi", "Rendah"):
+        return "pf-cm-sel pf-cm-bahaya"
+    return "pf-cm-sel"
+
+
+def _html_confusion(cm: pd.DataFrame, model_final: str) -> str:
+    kepala = ('<div></div>'
+              + "".join(f'<div class="pf-cm-sumbu">{k}</div>' for k in cm.index)
+              + '<div class="pf-cm-sumbu">Jumlah data</div>')
+    baris = ""
+    for sebenarnya, r in cm.iterrows():
+        baris += f'<div class="pf-cm-label">{sebenarnya}</div>'
+        for prediksi in cm.index:
+            latar = f' style="background:{WARNA_LATAR[prediksi]}"' if sebenarnya == prediksi else ""
+            baris += (f'<div class="{_kelas_sel(sebenarnya, prediksi)}"{latar}>'
+                      f'{angka(r[f"Prediksi_{prediksi}"])}</div>')
+        baris += f'<div class="pf-cm-jumlah">{angka(r["Jumlah_data"])}</div>'
+    return (
+        f'<div class="kl-h2">Confusion matrix · {model_final}</div>'
+        f'<div class="kl-kecil">Skenario {_nama_skenario(SKENARIO_FINAL)}. Baris = kelas '
+        'sebenarnya, kolom = prediksi. Sel berwarna = prediksi benar; bingkai merah = '
+        'Tinggi yang diprediksi Rendah.</div>'
+        '<div class="pf-gulir"><div class="pf-cm-judul">Prediksi →</div>'
+        f'<div class="pf-cm">{kepala}{baris}</div></div>'
     )
 
 
@@ -174,8 +207,12 @@ def render(sumber: SumberDataService) -> None:
         with st.container(key="bento_pf_skenario"):
             st.markdown(_html_ringkasan(ringkasan, model_final), unsafe_allow_html=True)
         kiri, kanan = st.columns([1.25, 1], gap="medium")
-        with kiri, st.container(key="bento_pf_kelas", height="stretch"):
-            st.markdown(_html_per_kelas(per_kelas, model_final), unsafe_allow_html=True)
+        with kiri:
+            with st.container(key="bento_pf_kelas"):
+                st.markdown(_html_per_kelas(per_kelas, model_final), unsafe_allow_html=True)
+            with st.container(key="bento_pf_matriks"):
+                cm = sumber.confusion_matrix(SKENARIO_FINAL, model_final)
+                st.markdown(_html_confusion(cm, model_final), unsafe_allow_html=True)
         with kanan, st.container(key="bento_pf_bahaya", height="stretch"):
             st.markdown(_html_bahaya(sumber, ringkasan, model_final), unsafe_allow_html=True)
         with st.container(key="bento_pf_baca"):

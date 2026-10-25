@@ -13,6 +13,7 @@ PATH_WILAYAH = ROOT / "data/grid_wilayah.csv"  # provinsi & kabupaten per grid (
 PATH_PERBANDINGAN = ROOT / "data/model/perbandingan_smotenc.csv"
 PATH_METRIK_RINGKASAN = ROOT / "data/model/metrik_lengkap_ringkasan.csv"
 PATH_METRIK_PER_KELAS = ROOT / "data/model/metrik_lengkap_per_kelas.csv"
+PATH_CONFUSION_MATRIX = ROOT / "data/model/confusion_matrix.csv"
 PATH_MODEL_RF = ROOT / "data/model/model_rf_final.pkl"
 PATH_MODEL_XGB = ROOT / "data/model/model_xgb_final.pkl"
 PATH_KOLOM_ENCODED = ROOT / "data/model/feature_columns_encoded.pkl"
