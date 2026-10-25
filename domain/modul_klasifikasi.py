@@ -5,7 +5,7 @@ SumberDataService (dependency) untuk mengambil data dan menyimpan hasil.
 """
 import pandas as pd
 
-from domain.grid import Grid
+from domain.grid import Grid, HasilPrediksi
 from domain.model_klasifikasi import RandomForestModel, XGBoostModel, siapkan
 from domain.sumber_data_service import SumberDataService
 
@@ -37,6 +37,13 @@ class ModulKlasifikasi:
         if simpan and kondisi.kondisi_id is not None:
             self.sumber.simpan_hasil(kondisi.kondisi_id, kondisi.hasil)
         return grid
+
+    def simulasi(self, nilai: dict) -> list[HasilPrediksi]:
+        """Jalankan kedua model untuk sebelas nilai isian pengguna (urutan: Random
+        Forest, XGBoost). Tidak disimpan ke HASIL_PREDIKSI karena tidak terikat grid
+        maupun periode."""
+        X = siapkan(pd.DataFrame([nilai]))
+        return [self.rf.predict(X)[0], self.xgb.predict(X)[0]]
 
     def klasifikasi_bulan(self, tahun_bulan: str, kabar=None) -> pd.DataFrame:
         """Jalankan kedua model untuk semua grid pada bulan di luar basis data (untuk

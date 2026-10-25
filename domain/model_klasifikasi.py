@@ -39,6 +39,13 @@ def siapkan(df: pd.DataFrame) -> pd.DataFrame:
               .reindex(columns=kolom_encoded, fill_value=0))
 
 
+def kategori_dikenal(kolom: str) -> set[str]:
+    """Nilai kategori yang punya kolom one-hot saat pelatihan."""
+    awalan = f"{kolom}_"
+    return {c[len(awalan):] for c in _muat_pkl("data/model/feature_columns_encoded.pkl")
+            if c.startswith(awalan)}
+
+
 class ModelKlasifikasi(ABC):
     """Kelas abstrak: setiap model mengembalikan HasilPrediksi per baris input."""
     nama: str

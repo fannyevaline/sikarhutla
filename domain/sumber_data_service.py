@@ -163,6 +163,29 @@ class SumberDataService:
             (pusat_lat, pusat_lon)).fetchone()
         return (baris[0], bool(baris[1])) if baris else (None, False)
 
+    # ---- untuk modul Simulasi ----------------------------------------------------
+
+    def rentang_variabel(self) -> tuple[pd.DataFrame, dict[str, list[str]]]:
+        """Min, max, dan median tiap variabel numerik (baris = kolom), serta nilai unik
+        variabel kategorikal urut dari yang paling sering. Variabel statis dihitung
+        dari 221 grid (satu nilai per grid), variabel cuaca dari seluruh grid-bulan."""
+        statis = _query("SELECT ketinggian_meter, kemiringan_lereng, jarak_air_meter, "
+                        "       jarak_jalan_meter, tutupan_lahan, gambut "
+                        "FROM GRID WHERE ada_di_dataset = 1")
+        cuaca = _query("SELECT curah_hujan_mm, suhu_maks_c, kelembapan_persen, "
+                       "       angin_maks_kmh, hari_kering_maks FROM KONDISI_BULANAN")
+        numerik = pd.concat([statis.select_dtypes("number"), cuaca], axis=1)
+        rentang = numerik.agg(["min", "max", "median"]).T
+        kategori = {k: statis[k].value_counts().index.tolist()
+                    for k in ("tutupan_lahan", "gambut")}
+        return rentang, kategori
+
+    def f1_per_kelas(self) -> pd.DataFrame:
+        """F1 tiap kelas pada skenario model final (baris = model, kolom = KELAS)."""
+        hasil = pd.read_csv(PATH_PERBANDINGAN)
+        final = hasil[hasil["Skenario"] == SKENARIO_FINAL].set_index("Model")
+        return final[[f"F1_{k}" for k in KELAS]].set_axis(KELAS, axis=1)
+
     # ---- periode -----------------------------------------------------------------
 
     def hari_ini(self) -> date:

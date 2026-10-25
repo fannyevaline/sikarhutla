@@ -2,7 +2,7 @@
 import streamlit as st
 
 from domain.sumber_data_service import SumberDataService
-from modul import beranda, klasifikasi
+from modul import beranda, klasifikasi, simulasi
 
 st.set_page_config(page_title="SiKarhutla", page_icon="🔥", layout="wide")
 
@@ -118,6 +118,8 @@ if pilihan == "Beranda":
     beranda.render(sumber)
 elif pilihan == "Klasifikasi":
     klasifikasi.render(sumber)
+elif pilihan == "Simulasi":
+    simulasi.render(sumber)
 else:
     st.title(pilihan)
     st.info("Modul ini belum dibangun.")
