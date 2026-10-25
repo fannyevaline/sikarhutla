@@ -14,6 +14,9 @@ Model final = skenario SKENARIO_FINAL dengan model F1-macro tertinggi pada pengu
 internal (SumberDataService.model_terbaik(), sama dengan yang dipakai untuk mewarnai
 peta). Pengujian eksternal tidak memilih ulang model final.
 """
+from dataclasses import dataclass
+from typing import Callable
+
 import pandas as pd
 import streamlit as st
 
@@ -24,25 +27,47 @@ from modul.tampilan import WARNA, WARNA_LATAR, angka, nama_periode
 PERIODE_EKSTERNAL = "Juli–September 2026"  # untuk keterangan saat berkasnya belum ada
 KESELURUHAN = "Keseluruhan"  # nilai kolom Periode untuk gabungan seluruh bulan
 
-# kolom CSV -> (judul kolom, keterangan kecil di bawah judul)
+
+def _persen(x: float) -> str:
+    return f"{angka(x * 100, 2)}%"
+
+
+@dataclass(frozen=True)
+class Kolom:
+    """Satu kolom tabel ringkasan: judul, keterangan kecil, arah nilai terbaik
+    ("max" atau "min"), dan cara menampilkan nilainya dari satu baris."""
+    judul: str
+    ket: str = ""
+    terbaik: str = "max"
+    tampil: Callable = lambda b, kolom: angka(getattr(b, kolom), 3)
+
+
+def _tampil_tinggi_rendah(b, kolom: str) -> str:
+    return (f"{_persen(b.Persen_Tinggi_jadi_Rendah)}"
+            f"<small>{angka(b.Tinggi_jadi_Rendah)} dari {angka(b.N_Tinggi)}</small>")
+
+
+# kolom CSV -> Kolom
 KOLOM_RINGKASAN = {
-    "Akurasi": ("Akurasi", ""),
-    "Precision_Macro": ("Precision", "macro"),
-    "Recall_Macro": ("Recall", "macro"),
-    "F1_Macro": ("F1", "macro"),
-    "AUC_Macro": ("AUC", "macro"),
-    "Cohen_Kappa": ("Cohen's Kappa", ""),
-    "MCC": ("MCC", ""),
+    "Akurasi": Kolom("Akurasi"),
+    "Precision_Macro": Kolom("Precision", "macro"),
+    "Recall_Macro": Kolom("Recall", "macro"),
+    "F1_Macro": Kolom("F1", "macro"),
+    "AUC_Macro": Kolom("AUC", "macro"),
+    "Cohen_Kappa": Kolom("Cohen's Kappa"),
+    "MCC": Kolom("MCC"),
+}
+KOLOM_PER_BULAN = {
+    "Akurasi": Kolom("Akurasi"),
+    "F1_Macro": Kolom("F1", "macro"),
+    "Persen_Tinggi_jadi_Rendah": Kolom("Tinggi → Rendah", "grid Tinggi", "min",
+                                       _tampil_tinggi_rendah),
 }
 KOLOM_PER_KELAS = {"Precision": "Precision", "Recall": "Recall", "F1": "F1", "AUC": "AUC"}
 
 # Kolom yang harus ada di CSV eksternal supaya komponen tampilan bisa dipakai.
 WAJIB_EKSTERNAL = ["Periode", "Model", *KOLOM_RINGKASAN, "Tinggi_jadi_Rendah",
                    "Persen_Tinggi_jadi_Rendah", "Jumlah_data"]
-
-
-def _persen(x: float) -> str:
-    return f"{angka(x * 100, 2)}%"
 
 
 def _nama_skenario(skenario: str) -> str:
@@ -95,18 +120,20 @@ def _baris_eksternal(sumber: SumberDataService, r: pd.DataFrame, model_final: st
 
 # ---- 1. tabel ringkasan ------------------------------------------------------------
 
-def _html_ringkasan(baris: pd.DataFrame, judul: str, ket: str) -> str:
-    kepala = "".join(f"<th>{j}<small>{k}</small></th>" for j, k in KOLOM_RINGKASAN.values())
-    tertinggi = baris[list(KOLOM_RINGKASAN)].max()
+def _html_ringkasan(baris: pd.DataFrame, judul: str, ket: str,
+                    kolom: dict[str, Kolom] = KOLOM_RINGKASAN) -> str:
+    kepala = "".join(f"<th>{k.judul}<small>{k.ket}</small></th>" for k in kolom.values())
+    terbaik = {c: baris[c].max() if k.terbaik == "max" else baris[c].min()
+               for c, k in kolom.items()}
     isi = ""
     for b in baris.itertuples():
         sel = "".join(
-            f"<td>{'<b>' if getattr(b, k) == tertinggi[k] else ''}{angka(getattr(b, k), 3)}</td>"
-            for k in KOLOM_RINGKASAN)
+            f"<td>{'<b>' if getattr(b, c) == terbaik[c] else ''}{k.tampil(b, c)}</td>"
+            for c, k in kolom.items())
         isi += f'<tr class="{"pf-final" if b.Final else ""}"><td>{_html_nama(b)}</td>{sel}</tr>'
     return (
         f'<div class="kl-h2">{judul}</div>'
-        f'<div class="kl-kecil">{ket} Angka tebal = tertinggi di kolomnya.</div>'
+        f'<div class="kl-kecil">{ket} Angka tebal = terbaik di kolomnya.</div>'
         f'<div class="pf-gulir"><table class="pf-tabel"><thead><tr>'
         f'<th>Model</th>{kepala}</tr></thead><tbody>{isi}</tbody></table></div>'
     )
@@ -242,8 +269,9 @@ def _html_cara_membaca(per_kelas: pd.DataFrame) -> str:
 # ---- susunan satu tab ---------------------------------------------------------------
 
 def _render_isi(akhiran: str, tabel: list[str], per_kelas_html: str, confusion_html: str,
-                bahaya_html: str, baca_html: str) -> None:
-    """Susunan kartu yang sama untuk kedua tab. akhiran membedakan key container."""
+                bahaya_html: str, baca_html: str, tambahan: tuple[str, ...] = ()) -> None:
+    """Susunan kartu yang sama untuk kedua tab. akhiran membedakan key container;
+    tambahan = kartu pelengkap yang dirender sebelum "Cara membaca"."""
     for i, html in enumerate(tabel):
         with st.container(key=f"bento_pf_tabel{i}_{akhiran}"):
             st.markdown(html, unsafe_allow_html=True)
@@ -255,6 +283,9 @@ def _render_isi(akhiran: str, tabel: list[str], per_kelas_html: str, confusion_h
             st.markdown(confusion_html, unsafe_allow_html=True)
     with kanan, st.container(key=f"bento_pf_bahaya_{akhiran}", height="stretch"):
         st.markdown(bahaya_html, unsafe_allow_html=True)
+    for i, html in enumerate(tambahan):
+        with st.container(key=f"bento_pf_tambahan{i}_{akhiran}"):
+            st.markdown(html, unsafe_allow_html=True)
     with st.container(key=f"bento_pf_baca_{akhiran}"):
         st.markdown(baca_html, unsafe_allow_html=True)
 
@@ -298,20 +329,29 @@ def _render_eksternal(sumber: SumberDataService, model_final: str,
     per_kelas = sumber.metrik_eksternal_per_kelas(KESELURUHAN, model_final)
     ket = f"periode {rentang}"
 
-    st.markdown(f'<div class="kl-kecil pf-ket-tab">{angka(keseluruhan.Jumlah_data.iloc[0])} '
-                f'grid-bulan periode {rentang}, sesudah periode data latih (Januari 2021 – '
-                'Juni 2026) sehingga tidak pernah dilihat model.</div>', unsafe_allow_html=True)
-    tabel = [_html_ringkasan(keseluruhan, f"Keseluruhan · {rentang}",
-                             "Kedua model final pada seluruh periode pengujian eksternal.")]
+    # Ukuran data dibaca dari CSV: total grid-bulan, grid per bulan, banyak bulan.
+    bulan_final = per_bulan[per_bulan.Model == model_final]
+    ukuran = f"{angka(keseluruhan.Jumlah_data.iloc[0])} grid-bulan"
+    if not bulan_final.empty:
+        ukuran += (f" ({angka(bulan_final.Jumlah_data.iloc[0])} grid × "
+                   f"{len(bulan_final)} bulan)")
+    st.markdown(f'<div class="kl-kecil pf-ket-tab">Periode {rentang} · {ukuran}. Model hanya '
+                'memprediksi dengan berkas .pkl yang sama, tidak dilatih ulang.</div>',
+                unsafe_allow_html=True)
+
+    tambahan = ()
     if not per_bulan.empty:
-        tabel.append(_html_ringkasan(per_bulan, "Per bulan",
-                                     "Hasil yang sama, dipecah per bulan."))
+        tambahan = (_html_ringkasan(per_bulan, "Rincian per bulan",
+                                    "Pelengkap tabel keseluruhan di atas.", KOLOM_PER_BULAN),)
     _render_isi(
-        "eksternal", tabel,
+        "eksternal",
+        [_html_ringkasan(keseluruhan, f"Keseluruhan · {rentang}",
+                         "Kedua model pada seluruh periode pengujian eksternal.")],
         _html_per_kelas(per_kelas, model_final, ket),
         _html_confusion(sumber.confusion_matrix_eksternal(model_final), model_final, ket),
-        _html_bahaya(eksternal, _catatan_eksternal(internal, eksternal)),
+        _html_bahaya(keseluruhan, _catatan_eksternal(internal, eksternal)),
         _html_cara_membaca(per_kelas),
+        tambahan,
     )
 
 

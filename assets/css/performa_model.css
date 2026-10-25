@@ -29,6 +29,7 @@
 .pf-tabel th:first-child, .pf-tabel td:first-child { text-align: left; padding-left: 0.6rem; }
 .pf-tabel tr:last-child td { border-bottom: none; }
 .pf-tabel td b { color: #1f1b18; font-weight: 800; }
+.pf-tabel td small { display: block; font-size: 0.72rem; color: #8a827a; }
 .pf-tabel tr.pf-final td { background: #fff4ea; }
 .pf-tabel tr.pf-final td:first-child { box-shadow: inset 3px 0 0 #e8590c; }
 
