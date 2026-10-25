@@ -11,8 +11,9 @@ import streamlit as st
 
 from domain import open_meteo
 from domain.grid import Grid, HasilPrediksi, KomposisiCuaca, KondisiBulanan
-from domain.konstanta import (KELAS, PATH_CUTOFF, PATH_DB, PATH_PERBANDINGAN,
-                              PATH_WILAYAH, SKENARIO_FINAL, UKURAN_GRID)
+from domain.konstanta import (KELAS, PATH_CUTOFF, PATH_DB, PATH_METRIK_PER_KELAS,
+                              PATH_METRIK_RINGKASAN, PATH_PERBANDINGAN, PATH_WILAYAH,
+                              SKENARIO_FINAL, UKURAN_GRID)
 
 WIB = timezone(timedelta(hours=7))
 _kunci_tulis = threading.Lock()  # koneksi dipakai bersama antar-thread
@@ -79,6 +80,20 @@ class SumberDataService:
     def f1_per_kelas(self) -> pd.DataFrame:
         """F1 tiap kelas pada skenario model final (baris = model, kolom = KELAS)."""
         return _baca_perbandingan_final()[[f"F1_{k}" for k in KELAS]].set_axis(KELAS, axis=1)
+
+    # ---- untuk modul Performa Model (hanya dibaca, tidak dihitung ulang) -------------
+
+    def metrik_ringkasan(self) -> pd.DataFrame:
+        """Metrik keseluruhan empat skenario (2 skenario x 2 model), urut seperti di
+        metrik_lengkap_ringkasan.csv."""
+        return pd.read_csv(PATH_METRIK_RINGKASAN)
+
+    def metrik_per_kelas(self, skenario: str, model: str) -> pd.DataFrame:
+        """Metrik tiap kelas untuk satu skenario dan model (indeks = KELAS), dari
+        metrik_lengkap_per_kelas.csv."""
+        df = pd.read_csv(PATH_METRIK_PER_KELAS)
+        pilih = df[(df["Skenario"] == skenario) & (df["Model"] == model)]
+        return pilih.set_index("Kelas").reindex(KELAS)
 
     # ---- ringkasan untuk Beranda -------------------------------------------------
 

@@ -1,0 +1,63 @@
+/* Halaman Performa Model (modul/performa_model.py). Awalan kelas: pf-
+   Kepala halaman dan kotak kosong ada di komponen.css. */
+
+[class*="st-key-bento_pf"]:hover { transform: none !important; }
+
+/* ---- tab internal / eksternal ---- */
+.st-key-pf_tab [role="tablist"] { gap: 0.4rem; margin-bottom: 0.6rem; }
+.st-key-pf_tab [data-testid="stTab"] { padding: 0.45rem 1rem; border-radius: 10px;
+    color: #8a827a; }
+.st-key-pf_tab [data-testid="stTab"][aria-selected="true"] { background: #fff4ea;
+    color: #b8460b; }
+.st-key-pf_tab [data-testid="stTab"][aria-selected="true"] p { font-weight: 700; }
+.st-key-pf_tab [data-testid="stTab"] p { font-size: 0.95rem; }
+.st-key-pf_tab .react-aria-SelectionIndicator { display: none; }
+
+/* ---- tabel metrik (garis bawaan tabel markdown Streamlit dimatikan) ---- */
+.pf-gulir { overflow-x: auto; margin-top: 0.8rem; }
+.pf-tabel { width: 100%; border-collapse: collapse; font-size: 0.9rem; color: #1f1b18;
+    border: none; }
+.pf-tabel th, .pf-tabel td { border: none; }
+.pf-tabel th { text-align: right; font-size: 0.78rem; font-weight: 700; color: #8a827a;
+    padding: 0 0.7rem 0.55rem; border-bottom: 1px solid #ece5dc; white-space: nowrap;
+    vertical-align: bottom; }
+.pf-tabel th small { display: block; font-weight: 600; color: #b0a79e; font-size: 0.7rem; }
+.pf-tabel td { text-align: right; padding: 0.65rem 0.7rem; border-bottom: 1px solid #f1ece6;
+    font-variant-numeric: tabular-nums; white-space: nowrap; color: #4f4842; }
+.pf-tabel th:first-child, .pf-tabel td:first-child { text-align: left; padding-left: 0.6rem; }
+.pf-tabel tr:last-child td { border-bottom: none; }
+.pf-tabel td b { color: #1f1b18; font-weight: 800; }
+.pf-tabel tr.pf-final td { background: #fff4ea; }
+.pf-tabel tr.pf-final td:first-child { box-shadow: inset 3px 0 0 #e8590c; }
+
+.pf-nama { display: flex; flex-wrap: wrap; align-items: center; gap: 0.2rem 0.5rem;
+    font-weight: 700; color: #1f1b18; }
+.pf-skenario { font-size: 0.78rem; color: #8a827a; }
+.pf-chip { border-radius: 999px; padding: 0.12rem 0.55rem; font-size: 0.68rem;
+    font-weight: 700; color: #b8460b; background: #ffe8d6; white-space: nowrap; }
+.pf-kelas { display: inline-flex; align-items: center; gap: 0.45rem; font-weight: 700;
+    color: #1f1b18; }
+.pf-kelas i { width: 10px; height: 10px; border-radius: 3px; }
+
+/* ---- Tinggi -> Rendah ---- */
+.pf-bahaya { margin-top: 0.75rem; padding: 0.6rem 0.8rem; border-radius: 12px; }
+.pf-bahaya.pf-final { background: #fff4ea; box-shadow: inset 3px 0 0 #e8590c; }
+.pf-bahaya-atas { display: flex; justify-content: space-between; align-items: flex-end;
+    gap: 1rem; }
+.pf-bahaya-nilai { text-align: right; font-size: 1.2rem; font-weight: 800; color: #b42323;
+    font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pf-bahaya-nilai small { display: block; font-size: 0.72rem; font-weight: 600;
+    color: #8a827a; white-space: normal; }
+.pf-batang { height: 8px; border-radius: 999px; background: rgba(0,0,0,0.06);
+    overflow: hidden; margin-top: 0.4rem; }
+.pf-batang i { display: block; height: 100%; border-radius: 999px; opacity: 0.55; }
+.pf-final .pf-batang i { opacity: 1; }
+.pf-catatan { margin-top: 0.9rem; padding: 0.7rem 0.9rem; border-radius: 10px;
+    background: #faf7f3; font-size: 0.86rem; color: #4f4842; line-height: 1.5; }
+.pf-catatan b { color: #1f1b18; }
+
+/* ---- cara membaca ---- */
+.pf-baca { display: grid; gap: 0.8rem 1.6rem; margin-top: 0.7rem;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    font-size: 0.88rem; color: #4f4842; line-height: 1.55; }
+.pf-baca b { color: #1f1b18; }
