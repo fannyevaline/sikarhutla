@@ -1,0 +1,13 @@
+Skenario,Model,Kelas_sebenarnya,Prediksi_Rendah,Prediksi_Sedang,Prediksi_Tinggi,Jumlah_data
+TANPA SMOTENC,Random Forest,Rendah,1832,45,98,1975
+TANPA SMOTENC,Random Forest,Sedang,406,22,70,498
+TANPA SMOTENC,Random Forest,Tinggi,280,20,197,497
+TANPA SMOTENC,XGBoost,Rendah,1660,138,177,1975
+TANPA SMOTENC,XGBoost,Sedang,306,84,108,498
+TANPA SMOTENC,XGBoost,Tinggi,222,56,219,497
+DENGAN SMOTENC,Random Forest,Rendah,1561,220,194,1975
+DENGAN SMOTENC,Random Forest,Sedang,248,122,128,498
+DENGAN SMOTENC,Random Forest,Tinggi,195,75,227,497
+DENGAN SMOTENC,XGBoost,Rendah,1414,351,210,1975
+DENGAN SMOTENC,XGBoost,Sedang,207,156,135,498
+DENGAN SMOTENC,XGBoost,Tinggi,158,109,230,497

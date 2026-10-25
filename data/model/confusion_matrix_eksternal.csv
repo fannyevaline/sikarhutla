@@ -1,0 +1,7 @@
+Model,Kelas_sebenarnya,Prediksi_Rendah,Prediksi_Sedang,Prediksi_Tinggi,Jumlah_data
+Random Forest,Rendah,129,12,35,176
+Random Forest,Sedang,28,13,22,63
+Random Forest,Tinggi,36,16,405,457
+XGBoost,Rendah,138,15,23,176
+XGBoost,Sedang,27,14,22,63
+XGBoost,Tinggi,31,16,410,457
