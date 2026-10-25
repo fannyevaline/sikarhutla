@@ -3,26 +3,7 @@ yang tidak diambil dari basis data historis."""
 import streamlit as st
 
 from domain.grid import KomposisiCuaca
-from modul.beranda import BULAN, _nama_periode
-
-CSS = """
-<style>
-.pm-batang { display: flex; height: 2.6rem; border-radius: 10px; overflow: hidden;
-    margin-top: 0.9rem; gap: 2px; }
-.pm-batang div { display: flex; align-items: center; justify-content: center;
-    color: #fff; font-weight: 700; font-size: 0.9rem; white-space: nowrap; min-width: 0;
-    overflow: hidden; }
-.pm-skala { display: flex; justify-content: space-between; font-size: 0.78rem;
-    color: #8a827a; margin-top: 0.3rem; }
-.pm-baris { display: flex; justify-content: space-between; align-items: center; gap: 1rem;
-    flex-wrap: wrap; padding: 0.8rem 1rem; margin-top: 0.6rem; border-radius: 12px;
-    border: 1px solid #efe8e0; border-left: 5px solid; background: #fcfaf8; }
-.pm-judul { font-weight: 700; color: #1f1b18; font-size: 0.98rem; }
-.pm-rentang { font-weight: 700; font-size: 0.92rem; text-align: right; }
-.pm-catatan { margin-top: 0.8rem; padding: 0.7rem 1rem; border-radius: 12px;
-    background: #fff4ea; border: 1px solid #ffd8bd; font-size: 0.88rem; color: #4f4842; }
-</style>
-"""
+from modul.tampilan import BULAN, nama_periode
 
 SUMBER = [
     ("hari_observasi", "Data aktual", "Open-Meteo Archive, nilai yang benar-benar terjadi",
@@ -82,8 +63,7 @@ def render(komposisi: KomposisiCuaca, tahun_bulan: str, status: str) -> None:
                    'klasifikasi untuk bulan ini.</div>')
 
     st.markdown(
-        CSS +
-        f'<div class="kl-h2">{judul.format(p=_nama_periode(tahun_bulan))}</div>'
+        f'<div class="kl-h2">{judul.format(p=nama_periode(tahun_bulan))}</div>'
         f'<div class="kl-kecil">{sub}</div>'
         f'<div class="pm-batang">{batang}</div>'
         f'<div class="pm-skala"><span>1 {bulan}</span><span>Komposisi {n} hari</span>'

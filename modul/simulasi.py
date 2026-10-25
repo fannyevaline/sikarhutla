@@ -14,55 +14,11 @@ import pandas as pd
 import streamlit as st
 
 from domain.grid import HasilPrediksi
-from domain.model_klasifikasi import FEATURE_COLS, kategori_dikenal
+from domain.konstanta import FEATURE_COLS, KELAS
+from domain.model_klasifikasi import kategori_dikenal
 from domain.modul_klasifikasi import ModulKlasifikasi
-from domain.sumber_data_service import KELAS, SumberDataService
-from modul.beranda import WARNA, WARNA_LATAR, WARNA_TEKS
-from modul.klasifikasi import CSS as CSS_KLASIFIKASI
-from modul.rincian_variabel import angka
-
-CSS = """
-<style>
-[class*="st-key-bento_sim"]:hover { transform: none !important; }
-.sm-kepala-grup { display: flex; align-items: baseline; gap: 0.55rem; flex-wrap: wrap;
-    margin-bottom: 0.2rem; }
-.sm-kepala-grup small { color: #8a827a; font-size: 0.8rem; }
-
-/* Ubin satu variabel */
-[class*="st-key-sim_ubin_"] { background: #fcfaf8; border: 1px solid #efe8e0;
-    border-radius: 12px; padding: 0.7rem 0.85rem 1.05rem; gap: 0.4rem; height: 100%; }
-[class*="st-key-sim_ubin_"] [data-testid="stWidgetLabel"] p { font-size: 0.86rem;
-    font-weight: 600; color: #1f1b18; }
-[class*="st-key-sim_ubin_"] [data-testid="stNumberInput"] input { font-weight: 800;
-    font-size: 1.1rem; font-variant-numeric: tabular-nums; }
-.sm-rentang { font-size: 0.72rem; color: #8a827a; font-variant-numeric: tabular-nums; }
-
-.st-key-bento_sim_tombol { background: transparent !important; border: none !important;
-    box-shadow: none !important; padding: 0 !important; }
-
-/* Hasil */
-.sm-kartu { padding: 0.95rem 1.1rem; height: 100%; }
-.sm-conf { font-size: 0.82rem; color: #6f6760; margin: 0.1rem 0 0.7rem; }
-.sm-conf b { font-size: 1.1rem; }
-.sm-p { display: flex; justify-content: space-between; font-size: 0.78rem; color: #4f4842;
-    margin-top: 0.45rem; }
-.sm-p b { font-variant-numeric: tabular-nums; }
-.sm-p-bar { height: 7px; border-radius: 999px; background: rgba(0,0,0,0.07); overflow: hidden;
-    margin-top: 0.15rem; }
-.sm-p-bar i { display: block; height: 100%; border-radius: 999px; }
-.sm-sepakat { display: flex; justify-content: space-between; align-items: center;
-    padding: 0.6rem 0.9rem; border-radius: 10px; background: #faf7f3;
-    font-size: 0.88rem; color: #4f4842; }
-.sm-sepakat b { color: #1f1b18; }
-.sm-basi { margin: 0.5rem 0 0.2rem; padding: 0.5rem 0.8rem; border-radius: 10px;
-    background: #ffe8d6; color: #b8460b; font-size: 0.84rem; font-weight: 600; }
-.sm-catatan { margin-top: 0.6rem; padding: 0.7rem 0.9rem; border-radius: 10px;
-    background: #fff8e6; border: 1px solid #f5e1a6; color: #5c4a14; font-size: 0.82rem;
-    line-height: 1.5; }
-.sm-catatan b { color: #3d300c; }
-.sm-kaki { margin-top: 0.55rem; font-size: 0.76rem; color: #a39a91; }
-</style>
-"""
+from domain.sumber_data_service import SumberDataService
+from modul.tampilan import WARNA, WARNA_LATAR, WARNA_TEKS, angka
 
 # kolom -> (nama, satuan tampilan, desimal tampilan, pembagi ke satuan tampilan)
 NUMERIK = {
@@ -233,7 +189,6 @@ def render(sumber: SumberDataService) -> None:
             **{k: daftar[0] for k, daftar in pilihan.items()}}
     st.session_state.setdefault("sim_isian", dict(awal))
 
-    st.markdown(CSS_KLASIFIKASI + CSS, unsafe_allow_html=True)
     st.markdown(
         '<div class="kl-label">Simulasi</div>'
         '<div class="kl-judul">Simulasi kerawanan</div>'

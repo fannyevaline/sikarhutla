@@ -21,15 +21,15 @@ Butuh Python 3.11.
 
 ```bash
 pip install -r requirements.txt
-python database.py      # sekali saja: membentuk data/karhutla.db
+python scripts/buat_database.py   # sekali saja: membentuk data/karhutla.db
 streamlit run app.py
 ```
 
 `data/karhutla.db` tidak disimpan di git. Berkas ini dibentuk dari
-`data/dataset_final.csv` dan `data/grid_kalimantan.csv` oleh `database.py`.
-Kalau `HASIL_PREDIKSI` sudah berisi riwayat klasifikasi, `database.py` menolak
+`data/dataset_final.csv` dan `data/grid_kalimantan.csv` oleh `scripts/buat_database.py`.
+Kalau `HASIL_PREDIKSI` sudah berisi riwayat klasifikasi, skrip itu menolak
 berjalan supaya riwayat tidak terhapus tanpa sengaja. Untuk tetap membangun ulang,
-matikan aplikasi lalu jalankan `python database.py --paksa`; basis data lama
+matikan aplikasi lalu jalankan `python scripts/buat_database.py --paksa`; basis data lama
 disalin dulu ke `data/karhutla_cadangan_<waktu>.db`.
 
 Aplikasi terbuka di `http://localhost:3000`.
@@ -42,10 +42,18 @@ berjalan normal.
 
 ## Isi aplikasi
 
-Empat halaman yang memuat sembilan modul fungsional sesuai rancangan pada Bab 3:
+Lima halaman yang memuat sepuluh modul fungsional sesuai rancangan pada Bab 3
+(halaman Simulasi ditambahkan atas permintaan dosen pembimbing):
 
 | Halaman        | Modul fungsional                                                                                                                                                                |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Beranda        | Beranda                                                                                                                                                                         |
+| Klasifikasi    | Peta Interaktif Kerawanan · Pemilihan Wilayah dan Periode · Klasifikasi Kerawanan · Hasil Klasifikasi dan Confidence · Rincian Variabel Prediktor · Informasi Periode Mendatang |
+| Simulasi       | Simulasi (isi sendiri sebelas variabel, lihat hasil kedua model)                                                                                                                |
+| Performa Model | Perbandingan Performa Model                                                                                                                                                     |
+| Bantuan        | Bantuan                                                                                                                                                                         |
+
+-------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Beranda        | Beranda                                                                                                                                                                         |
 | Klasifikasi    | Peta Interaktif Kerawanan · Pemilihan Wilayah dan Periode · Klasifikasi Kerawanan · Hasil Klasifikasi dan Confidence · Rincian Variabel Prediktor · Informasi Periode Mendatang |
 | Performa Model | Perbandingan Performa Model                                                                                                                                                     |
@@ -55,16 +63,43 @@ Empat halaman yang memuat sembilan modul fungsional sesuai rancangan pada Bab 3:
 
 ## Struktur berkas
 
+Satu aplikasi Streamlit (monolitik), dibagi tiga lapisan supaya mudah dipelajari:
+
 ```
-app.py                  titik masuk aplikasi Streamlit
-database.py             membentuk data/karhutla.db dari berkas CSV
-modul/                  satu berkas per halaman
-domain/                 kelas sesuai class diagram (Gambar 3.8)
-data/                   model pre-trained dan dataset
-mockup/                 gambar rancangan antarmuka dari proposal
-.streamlit/config.toml  tema tampilan
-requirements.txt        daftar pustaka
+app.py                      titik masuk: pasang CSS, gambar sidebar, panggil halaman
+
+domain/                     BACKEND - data, model, cuaca (tanpa HTML/CSS)
+  konstanta.py              kelas, sebelas fitur, ukuran grid, lokasi berkas data
+  grid.py                   Grid, KondisiBulanan, HasilPrediksi (class diagram)
+  model_klasifikasi.py      ModelKlasifikasi, RandomForestModel, XGBoostModel
+  modul_klasifikasi.py      ModulKlasifikasi: orkestrator kedua model
+  sumber_data_service.py    SumberDataService: query SQLite, simpan hasil
+  open_meteo.py             cuaca harian Open-Meteo untuk bulan di luar basis data
+
+modul/                      TAMPILAN - satu berkas per modul fungsional
+  tampilan.py               warna kelas, nama bulan, format angka, gaya grafik
+  beranda.py                Modul 1
+  klasifikasi.py            Modul 3-5, merangkai peta, rincian, dan periode mendatang
+  peta.py                   Modul 2
+  rincian_variabel.py       Modul 6
+  periode_mendatang.py      Modul 7
+  simulasi.py               Modul 10
+
+assets/css/                 GAYA - satu berkas CSS per halaman/modul
+  global.css                tata letak, kartu, sidebar
+  komponen.css              komponen bersama Klasifikasi & Simulasi
+  beranda.css, klasifikasi.css, peta.css, rincian_variabel.css,
+  periode_mendatang.css, simulasi.css
+
+scripts/buat_database.py    membentuk data/karhutla.db dari berkas CSV
+data/                       model pre-trained dan dataset
+mockup/                     gambar rancangan antarmuka dari proposal
+.streamlit/config.toml      tema tampilan
+requirements.txt            daftar pustaka
 ```
+
+Arah ketergantungan: `app.py` → `modul/` → `domain/`. Berkas di `domain/` tidak
+pernah mengimpor `modul/`.
 
 Aplikasi hanya **memuat** model yang sudah dilatih sebelumnya dan memanggil
 `predict()`. Tidak ada pelatihan model di dalam aplikasi ini. Seluruh pengolahan

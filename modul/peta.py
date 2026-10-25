@@ -9,8 +9,10 @@ import pandas as pd
 import streamlit as st
 from streamlit_folium import st_folium
 
-from domain.sumber_data_service import KELAS, UKURAN_GRID, SumberDataService
-from modul.beranda import WARNA, _nama_periode
+from domain.grid import nama_wilayah
+from domain.konstanta import KELAS, UKURAN_GRID
+from domain.sumber_data_service import SumberDataService
+from modul.tampilan import WARNA, nama_periode
 
 ABU = {"Belum tercatat": "#d8d0c6", "Tidak ada data": "#9e968e"}
 KOLOM = {"Random Forest": "kelas_rf", "XGBoost": "kelas_xgb"}
@@ -20,18 +22,6 @@ BATAS = [[-4.6, 108.4], [4.6, 119.6]]
 TILE = ("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/"
         "World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}")
 ATRIBUSI = "Esri, HERE, Garmin, © OpenStreetMap contributors"
-
-CSS = """
-<style>
-.pt-legenda { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; margin-top: 0.7rem;
-    font-size: 0.82rem; color: #4f4842; }
-.pt-legenda span { display: inline-flex; align-items: center; gap: 0.4rem; }
-.pt-legenda i { width: 12px; height: 12px; border-radius: 3px; }
-.pt-legenda .pt-pilih { margin-left: auto; color: #8a827a; }
-.pt-legenda .pt-pilih i { border: 2.5px solid #1f1b18; border-radius: 2px; }
-</style>
-"""
-
 
 def _fitur(grid, periode_tercatat: bool, prediksi: pd.DataFrame | None, model: str) -> dict:
     """GeoJSON satu grid: persegi 0,5 derajat di sekitar titik pusatnya."""
@@ -49,8 +39,7 @@ def _fitur(grid, periode_tercatat: bool, prediksi: pd.DataFrame | None, model: s
                f"XGBoost: {r.kelas_xgb} ({r.conf_xgb:.0%})")
     else:
         kelas, ket = "Belum tercatat", "Kategori belum tercatat"
-    nama = (f"{grid.kabupaten}, {grid.provinsi}" if isinstance(grid.kabupaten, str)
-            else f"Grid {lat:.2f}, {lon:.2f}")
+    nama = nama_wilayah(grid.kabupaten, grid.provinsi, lat, lon)
     return {
         "type": "Feature",
         "properties": {"nama": nama, "ket": ket, "warna": WARNA.get(kelas, ABU.get(kelas))},
@@ -92,7 +81,7 @@ def _legenda(berwarna: bool) -> str:
     isi = "".join(f'<span><i style="background:{WARNA.get(k, ABU.get(k))}"></i>{k}</span>'
                   for k in kelas)
     isi += f'<span><i style="background:{ABU["Tidak ada data"]}"></i>Tidak ada data</span>'
-    return (f'{CSS}<div class="pt-legenda">{isi}'
+    return (f'<div class="pt-legenda">{isi}'
             '<span class="pt-pilih"><i></i>Grid terpilih</span></div>')
 
 
@@ -102,7 +91,7 @@ def render(sumber: SumberDataService, periode: str, grid_terpilih: str,
     prediksi = hasil ModulKlasifikasi.klasifikasi_bulan() untuk bulan di luar
     basis data; None kalau bulan tercatat atau data cuaca gagal diambil."""
     tercatat = sumber.status_periode(periode) == "historis"
-    st.markdown(f'<div class="kl-h2">Peta kerawanan · {_nama_periode(periode)}</div>',
+    st.markdown(f'<div class="kl-h2">Peta kerawanan · {nama_periode(periode)}</div>',
                 unsafe_allow_html=True)
     model = sumber.model_terbaik()
     if tercatat:

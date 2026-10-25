@@ -6,7 +6,6 @@ requests
 plotly
 folium
 streamlit-folium
-python-dotenv
 
 # PENTING: dua baris di bawah harus DISAMAKAN dengan versi yang dipakai
 # saat model dilatih, kalau tidak file .pkl bisa gagal dimuat atau

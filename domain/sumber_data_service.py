@@ -5,40 +5,27 @@ import math
 import sqlite3
 import threading
 from datetime import date, datetime, timedelta, timezone
-from pathlib import Path
 
 import pandas as pd
 import streamlit as st
 
 from domain import open_meteo
-from domain.open_meteo import GagalAmbilCuaca  # noqa: F401  (dipakai halaman Klasifikasi)
 from domain.grid import Grid, HasilPrediksi, KomposisiCuaca, KondisiBulanan
-
-ROOT = Path(__file__).resolve().parent.parent
-PATH_DB = ROOT / "data/karhutla.db"
-PATH_CUTOFF = ROOT / "data/tertile_cutoff.json"
-PATH_WILAYAH = ROOT / "data/grid_wilayah.csv"  # provinsi & kabupaten per grid (GADM v4.1)
-PATH_PERBANDINGAN = ROOT / "data/model/perbandingan_smotenc.csv"
-SKENARIO_FINAL = "DENGAN SMOTENC"  # skenario yang disimpan sebagai *_final.pkl
-
-KELAS = ["Rendah", "Sedang", "Tinggi"]
-UKURAN_GRID = 0.5
-_kunci_tulis = threading.Lock()  # koneksi dipakai bersama antar-thread
+from domain.konstanta import (KELAS, PATH_CUTOFF, PATH_DB, PATH_PERBANDINGAN,
+                              PATH_WILAYAH, SKENARIO_FINAL, UKURAN_GRID)
 
 WIB = timezone(timedelta(hours=7))
+_kunci_tulis = threading.Lock()  # koneksi dipakai bersama antar-thread
 
-# Urutan kolom sama dengan dataset_final.csv, supaya muat_dataset() tetap setara.
-SQL_DATASET = """
-    SELECT g.grid_lat, g.grid_lon, k.tahun_bulan, k.jumlah_hotspot, k.kerawanan,
-           g.ketinggian_meter, g.kemiringan_lereng, g.jarak_air_meter,
-           g.kode_worldcover, g.tutupan_lahan, g.gambut, g.jarak_jalan_meter,
-           k.curah_hujan_mm, k.suhu_maks_c, k.kelembapan_persen,
-           k.angin_maks_kmh, k.hari_kering_maks
-    FROM   KONDISI_BULANAN k
-    JOIN   GRID g ON g.grid_id = k.grid_id
-    ORDER  BY g.grid_lat, g.grid_lon, k.tahun_bulan
-"""
+# Kolom tabel GRID yang menjadi variabel statis model, beserta penanda grid-nya.
+SQL_GRID_STATIS = (
+    "SELECT grid_id, grid_lat, grid_lon, ketinggian_meter, kemiringan_lereng, "
+    "       jarak_air_meter, jarak_jalan_meter, tutupan_lahan, gambut "
+    "FROM GRID WHERE ada_di_dataset = 1"
+)
 
+
+# ---- akses basis data dan berkas ---------------------------------------------------
 
 @st.cache_resource
 def _koneksi() -> sqlite3.Connection:
@@ -60,12 +47,25 @@ def _baca_wilayah() -> pd.DataFrame | None:
     return pd.read_csv(PATH_WILAYAH)[["grid_lat", "grid_lon", "provinsi", "kabupaten"]]
 
 
+def _tambah_wilayah(grid: pd.DataFrame) -> pd.DataFrame:
+    """Tambahkan kolom provinsi dan kabupaten (None kalau grid_wilayah.csv belum ada)."""
+    wilayah = _baca_wilayah()
+    if wilayah is None:
+        return grid.assign(provinsi=None, kabupaten=None)
+    hasil = grid.merge(wilayah, on=["grid_lat", "grid_lon"], how="left")
+    if len(hasil) != len(grid):
+        raise ValueError("grid_wilayah.csv punya koordinat ganda; harus satu baris per grid")
+    return hasil
+
+
+def _baca_perbandingan_final() -> pd.DataFrame:
+    """Baris perbandingan_smotenc.csv untuk skenario model final, indeks = Model."""
+    hasil = pd.read_csv(PATH_PERBANDINGAN)
+    return hasil[hasil["Skenario"] == SKENARIO_FINAL].set_index("Model")
+
+
 class SumberDataService:
     """Sumber data historis dari basis data karhutla.db dan ambang tertile."""
-
-    def muat_dataset(self) -> pd.DataFrame:
-        """Seluruh grid-bulan dalam bentuk yang sama dengan dataset_final.csv."""
-        return _query(SQL_DATASET)
 
     def muat_cutoff(self) -> dict:
         with open(PATH_CUTOFF, encoding="utf-8") as f:
@@ -74,13 +74,22 @@ class SumberDataService:
     def model_terbaik(self) -> str:
         """Model dengan F1-macro tertinggi pada skenario model final (DENGAN SMOTENC,
         sesuai train_model_compare.py), menurut perbandingan_smotenc.csv."""
-        hasil = pd.read_csv(PATH_PERBANDINGAN)
-        final = hasil[hasil["Skenario"] == SKENARIO_FINAL]
-        return final.loc[final["F1_Macro"].idxmax(), "Model"]
+        return _baca_perbandingan_final()["F1_Macro"].idxmax()
+
+    def f1_per_kelas(self) -> pd.DataFrame:
+        """F1 tiap kelas pada skenario model final (baris = model, kolom = KELAS)."""
+        return _baca_perbandingan_final()[[f"F1_{k}" for k in KELAS]].set_axis(KELAS, axis=1)
+
+    # ---- ringkasan untuk Beranda -------------------------------------------------
 
     def periode_terakhir(self) -> str:
         return _koneksi().execute(
             "SELECT MAX(tahun_bulan) FROM KONDISI_BULANAN").fetchone()[0]
+
+    def daftar_periode(self) -> list[str]:
+        """Semua periode "YYYY-MM" yang ada di dataset, urut naik."""
+        return [b[0] for b in _koneksi().execute(
+            "SELECT DISTINCT tahun_bulan FROM KONDISI_BULANAN ORDER BY tahun_bulan")]
 
     def ringkasan_kategori(self, tahun_bulan: str) -> pd.Series:
         """Jumlah grid per kelas kerawanan pada satu periode."""
@@ -89,36 +98,6 @@ class SumberDataService:
         return (df.set_index("kerawanan")["jumlah"]
                   .rename_axis(None)
                   .reindex(KELAS, fill_value=0))
-
-    def muat_grid(self) -> pd.DataFrame:
-        """232 grid resmi (titik pusat), termasuk yang tidak ada di dataset, beserta
-        provinsi dan kabupatennya (None kalau grid_wilayah.csv belum ada)."""
-        grid = _query("SELECT grid_lat, grid_lon FROM GRID ORDER BY rowid")
-        wilayah = _baca_wilayah()
-        if wilayah is None:
-            return grid.assign(provinsi=None, kabupaten=None)
-        hasil = grid.merge(wilayah, on=["grid_lat", "grid_lon"], how="left")
-        if len(hasil) != len(grid):
-            raise ValueError("grid_wilayah.csv punya koordinat ganda; harus satu baris per grid")
-        return hasil
-
-    def kategori_per_grid(self, tahun_bulan: str) -> pd.DataFrame:
-        """Kelas kerawanan tiap grid resmi pada satu periode; grid tanpa data diberi
-        label "Tidak ada data"."""
-        periode = _query(
-            "SELECT g.grid_id, g.grid_lat, g.grid_lon, g.ada_di_dataset, "
-            "       k.kerawanan, k.jumlah_hotspot "
-            "FROM GRID g LEFT JOIN KONDISI_BULANAN k "
-            "  ON k.grid_id = g.grid_id AND k.tahun_bulan = ? "
-            "ORDER BY g.rowid", (tahun_bulan,))
-        hasil = self.muat_grid().merge(periode, on=["grid_lat", "grid_lon"], how="left")
-        hasil["kerawanan"] = hasil["kerawanan"].fillna("Tidak ada data")
-        return hasil
-
-    def daftar_periode(self) -> list[str]:
-        """Semua periode "YYYY-MM" yang ada di dataset, urut naik."""
-        return [b[0] for b in _koneksi().execute(
-            "SELECT DISTINCT tahun_bulan FROM KONDISI_BULANAN ORDER BY tahun_bulan")]
 
     def tren_kategori(self) -> pd.DataFrame:
         """Jumlah grid per kelas kerawanan untuk tiap periode (baris = tahun_bulan)."""
@@ -137,20 +116,34 @@ class SumberDataService:
                     .unstack(fill_value=0)
                     .reindex(columns=KELAS, fill_value=0))
 
-    # ---- untuk modul Klasifikasi -------------------------------------------------
+    # ---- grid untuk peta dan pemilihan wilayah ------------------------------------
+
+    def muat_grid(self) -> pd.DataFrame:
+        """232 grid resmi (titik pusat), termasuk yang tidak ada di dataset, beserta
+        provinsi dan kabupatennya."""
+        return _tambah_wilayah(_query("SELECT grid_lat, grid_lon FROM GRID ORDER BY rowid"))
+
+    def kategori_per_grid(self, tahun_bulan: str) -> pd.DataFrame:
+        """Kelas kerawanan tiap grid resmi pada satu periode; grid tanpa data diberi
+        label "Tidak ada data"."""
+        periode = _query(
+            "SELECT g.grid_id, g.grid_lat, g.grid_lon, g.ada_di_dataset, "
+            "       k.kerawanan, k.jumlah_hotspot "
+            "FROM GRID g LEFT JOIN KONDISI_BULANAN k "
+            "  ON k.grid_id = g.grid_id AND k.tahun_bulan = ? "
+            "ORDER BY g.rowid", (tahun_bulan,))
+        hasil = self.muat_grid().merge(periode, on=["grid_lat", "grid_lon"], how="left")
+        hasil["kerawanan"] = hasil["kerawanan"].fillna("Tidak ada data")
+        return hasil
 
     def daftar_grid_tersedia(self) -> pd.DataFrame:
         """Grid yang ada di dataset (ada_di_dataset = 1) beserta nama wilayahnya,
         urut provinsi lalu kabupaten."""
-        grid = _query("SELECT grid_id, grid_lat, grid_lon FROM GRID "
-                      "WHERE ada_di_dataset = 1")
-        wilayah = _baca_wilayah()
-        if wilayah is None:
-            return grid.assign(provinsi=None, kabupaten=None).sort_values(
-                ["grid_lat", "grid_lon"], ignore_index=True)
-        return (grid.merge(wilayah, on=["grid_lat", "grid_lon"], how="left")
-                    .sort_values(["provinsi", "kabupaten", "grid_lat", "grid_lon"],
-                                 ignore_index=True))
+        grid = _tambah_wilayah(_query("SELECT grid_id, grid_lat, grid_lon FROM GRID "
+                                      "WHERE ada_di_dataset = 1"))
+        urutan = (["grid_lat", "grid_lon"] if grid["provinsi"].isna().all()
+                  else ["provinsi", "kabupaten", "grid_lat", "grid_lon"])
+        return grid.sort_values(urutan, ignore_index=True)
 
     def cari_grid(self, lat: float, lon: float) -> tuple[str | None, bool]:
         """Grid 0,5 derajat yang memuat koordinat (lat, lon).
@@ -169,9 +162,7 @@ class SumberDataService:
         """Min, max, dan median tiap variabel numerik (baris = kolom), serta nilai unik
         variabel kategorikal urut dari yang paling sering. Variabel statis dihitung
         dari 221 grid (satu nilai per grid), variabel cuaca dari seluruh grid-bulan."""
-        statis = _query("SELECT ketinggian_meter, kemiringan_lereng, jarak_air_meter, "
-                        "       jarak_jalan_meter, tutupan_lahan, gambut "
-                        "FROM GRID WHERE ada_di_dataset = 1")
+        statis = _query(SQL_GRID_STATIS).drop(columns=["grid_id", "grid_lat", "grid_lon"])
         cuaca = _query("SELECT curah_hujan_mm, suhu_maks_c, kelembapan_persen, "
                        "       angin_maks_kmh, hari_kering_maks FROM KONDISI_BULANAN")
         numerik = pd.concat([statis.select_dtypes("number"), cuaca], axis=1)
@@ -179,12 +170,6 @@ class SumberDataService:
         kategori = {k: statis[k].value_counts().index.tolist()
                     for k in ("tutupan_lahan", "gambut")}
         return rentang, kategori
-
-    def f1_per_kelas(self) -> pd.DataFrame:
-        """F1 tiap kelas pada skenario model final (baris = model, kolom = KELAS)."""
-        hasil = pd.read_csv(PATH_PERBANDINGAN)
-        final = hasil[hasil["Skenario"] == SKENARIO_FINAL].set_index("Model")
-        return final[[f"F1_{k}" for k in KELAS]].set_axis(KELAS, axis=1)
 
     # ---- periode -----------------------------------------------------------------
 
@@ -215,28 +200,45 @@ class SumberDataService:
 
     # ---- grid dan kondisi bulanan ----------------------------------------------------
 
+    def muat_grid_statis_semua(self) -> pd.DataFrame:
+        """Variabel statis semua grid yang ada di dataset (221 baris)."""
+        return _query(SQL_GRID_STATIS + " ORDER BY rowid")
+
     def muat_grid_statis(self, grid_id: str) -> Grid | None:
         """Grid beserta variabel statisnya (tanpa kondisi bulanan); None kalau grid
         tidak ada di dataset."""
-        baris = _query(
-            "SELECT grid_id, grid_lat, grid_lon, ketinggian_meter, kemiringan_lereng, "
-            "       jarak_air_meter, jarak_jalan_meter, tutupan_lahan, gambut "
-            "FROM GRID WHERE grid_id = ? AND ada_di_dataset = 1", (grid_id,))
+        baris = _tambah_wilayah(_query(SQL_GRID_STATIS + " AND grid_id = ?", (grid_id,)))
         if baris.empty:
             return None
         r = baris.iloc[0]
-        nama = {"provinsi": None, "kabupaten": None}
-        wilayah = _baca_wilayah()
-        if wilayah is not None:
-            cocok = wilayah[(wilayah.grid_lat == r.grid_lat) & (wilayah.grid_lon == r.grid_lon)]
-            if len(cocok):
-                nama = cocok.iloc[0][["provinsi", "kabupaten"]].to_dict()
         return Grid(
             grid_id=r.grid_id, grid_lat=float(r.grid_lat), grid_lon=float(r.grid_lon),
             ketinggian_meter=r.ketinggian_meter, kemiringan_lereng=r.kemiringan_lereng,
             jarak_air_meter=r.jarak_air_meter, jarak_jalan_meter=r.jarak_jalan_meter,
-            tutupan_lahan=r.tutupan_lahan, gambut=r.gambut, **nama,
+            tutupan_lahan=r.tutupan_lahan, gambut=r.gambut,
+            provinsi=r.provinsi, kabupaten=r.kabupaten,
         )
+
+    def muat_grid_kondisi(self, grid_id: str, tahun_bulan: str) -> Grid | None:
+        """Grid beserta KondisiBulanan-nya dari basis data; None kalau tidak ada."""
+        grid = self.muat_grid_statis(grid_id)
+        baris = _query(
+            "SELECT kondisi_id, tahun_bulan, curah_hujan_mm, suhu_maks_c, "
+            "       kelembapan_persen, angin_maks_kmh, hari_kering_maks, "
+            "       jumlah_hotspot, kerawanan "
+            "FROM KONDISI_BULANAN WHERE grid_id = ? AND tahun_bulan = ?",
+            (grid_id, tahun_bulan))
+        if grid is None or baris.empty:
+            return None
+        r = baris.iloc[0]
+        grid.kondisi.append(KondisiBulanan(
+            kondisi_id=int(r.kondisi_id), tahun_bulan=r.tahun_bulan,
+            curah_hujan_mm=r.curah_hujan_mm, suhu_maks_c=r.suhu_maks_c,
+            kelembapan_persen=r.kelembapan_persen, angin_maks_kmh=r.angin_maks_kmh,
+            hari_kering_maks=int(r.hari_kering_maks), jumlah_hotspot=int(r.jumlah_hotspot),
+            kerawanan=r.kerawanan,
+        ))
+        return grid
 
     def rata_rata_bulan(self, grid_id: str, bulan: int) -> pd.Series:
         """Rata-rata variabel dinamis grid pada bulan kalender yang sama di dataset."""
@@ -250,12 +252,7 @@ class SumberDataService:
             "FROM KONDISI_BULANAN WHERE grid_id = ? AND substr(tahun_bulan, 6, 2) = ?",
             (grid_id, f"{bulan:02d}")).iloc[0]
 
-    def muat_grid_statis_semua(self) -> pd.DataFrame:
-        """Variabel statis semua grid yang ada di dataset (221 baris)."""
-        return _query(
-            "SELECT grid_id, grid_lat, grid_lon, ketinggian_meter, kemiringan_lereng, "
-            "       jarak_air_meter, jarak_jalan_meter, tutupan_lahan, gambut "
-            "FROM GRID WHERE ada_di_dataset = 1 ORDER BY rowid")
+    # ---- cuaca bulan di luar basis data (Open-Meteo) --------------------------------
 
     def susun_cuaca_semua(self, tahun_bulan: str, kabar=None) -> pd.DataFrame:
         """Lima variabel cuaca bulanan semua grid untuk bulan di luar basis data,
@@ -282,26 +279,7 @@ class SumberDataService:
                                      int(r.hari_klimatologi)),
         )
 
-    def muat_grid_kondisi(self, grid_id: str, tahun_bulan: str) -> Grid | None:
-        """Grid beserta KondisiBulanan-nya dari basis data; None kalau tidak ada."""
-        grid = self.muat_grid_statis(grid_id)
-        baris = _query(
-            "SELECT kondisi_id, tahun_bulan, curah_hujan_mm, suhu_maks_c, "
-            "       kelembapan_persen, angin_maks_kmh, hari_kering_maks, "
-            "       jumlah_hotspot, kerawanan "
-            "FROM KONDISI_BULANAN WHERE grid_id = ? AND tahun_bulan = ?",
-            (grid_id, tahun_bulan))
-        if grid is None or baris.empty:
-            return None
-        r = baris.iloc[0]
-        grid.kondisi.append(KondisiBulanan(
-            kondisi_id=int(r.kondisi_id), tahun_bulan=r.tahun_bulan,
-            curah_hujan_mm=r.curah_hujan_mm, suhu_maks_c=r.suhu_maks_c,
-            kelembapan_persen=r.kelembapan_persen, angin_maks_kmh=r.angin_maks_kmh,
-            hari_kering_maks=int(r.hari_kering_maks), jumlah_hotspot=int(r.jumlah_hotspot),
-            kerawanan=r.kerawanan,
-        ))
-        return grid
+    # ---- penyimpanan ---------------------------------------------------------------
 
     def simpan_hasil(self, kondisi_id: int, hasil: list[HasilPrediksi]) -> None:
         """Simpan hasil tiap model ke tabel HASIL_PREDIKSI."""

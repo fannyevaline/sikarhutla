@@ -2,7 +2,7 @@
 Membentuk basis data SQLite sesuai ERD pada Gambar 3.7 laporan.
 
 Dijalankan SEKALI dari folder aplikasi:
-    python database.py
+    python scripts/buat_database.py
 
 Membaca  : data/dataset_final.csv, data/grid_kalimantan.csv
 Menghasil: data/karhutla.db  berisi tiga tabel
@@ -16,7 +16,7 @@ Menjalankannya ulang akan membangun ulang ketiga tabel dari awal.
 
 Pengaman: kalau HASIL_PREDIKSI sudah berisi riwayat klasifikasi, script menolak
 berjalan. Untuk tetap membangun ulang, jalankan:
-    python database.py --paksa
+    python scripts/buat_database.py --paksa
 Basis data lama lebih dulu disalin ke data/karhutla_cadangan_<waktu>.db.
 """
 import argparse
@@ -28,7 +28,7 @@ from pathlib import Path
 
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent  # folder aplikasi
 PATH_DATASET = ROOT / "data" / "dataset_final.csv"
 PATH_GRID = ROOT / "data" / "grid_kalimantan.csv"
 PATH_DB = ROOT / "data" / "karhutla.db"
@@ -121,7 +121,7 @@ def amankan_riwayat(paksa: bool) -> None:
         print(f"DIBATALKAN: HASIL_PREDIKSI berisi {n:,} riwayat klasifikasi yang akan "
               f"terhapus kalau basis data dibangun ulang.\n"
               f"Tidak ada yang diubah. Untuk tetap membangun ulang (riwayat disalin "
-              f"dulu ke cadangan), jalankan:\n    python database.py --paksa")
+              f"dulu ke cadangan), jalankan:\n    python scripts/buat_database.py --paksa")
         sys.exit(1)
     cadangan = PATH_DB.with_name(f"karhutla_cadangan_{datetime.now():%Y%m%d_%H%M%S}.db")
     shutil.copy2(PATH_DB, cadangan)

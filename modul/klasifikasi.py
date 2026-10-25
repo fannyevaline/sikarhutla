@@ -9,67 +9,13 @@
 """
 import streamlit as st
 
-from domain.grid import Grid, HasilPrediksi
+from domain.grid import Grid, HasilPrediksi, nama_wilayah
+from domain.konstanta import KELAS
 from domain.modul_klasifikasi import ModulKlasifikasi
-from domain.sumber_data_service import KELAS, GagalAmbilCuaca, SumberDataService
+from domain.open_meteo import GagalAmbilCuaca
+from domain.sumber_data_service import SumberDataService
 from modul import peta, periode_mendatang, rincian_variabel
-from modul.beranda import BULAN, WARNA, WARNA_LATAR, WARNA_TEKS, _nama_periode
-
-CSS = """
-<style>
-.kl-label { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em;
-    text-transform: uppercase; color: #e8590c; margin-bottom: 0.25rem; }
-.kl-judul { font-size: 2rem; font-weight: 800; color: #1f1b18; line-height: 1.15;
-    letter-spacing: -0.02em; }
-.kl-sub { color: #756d66; font-size: 0.98rem; margin: 0.3rem 0 1.2rem; }
-.kl-h2 { font-size: 1.08rem; font-weight: 700; color: #1f1b18; margin: 0; }
-.kl-kecil { color: #756d66; font-size: 0.86rem; }
-.st-key-bento_kl_peta:hover, .st-key-bento_kl_panel:hover { transform: none !important; }
-.st-key-bento_kl_panel [data-testid="stPopover"] button { padding: 0; min-height: 0;
-    font-size: 0.84rem; color: #b8460b; }
-
-.kl-garis { border-top: 1px solid #f1ece6; margin: 0.4rem 0 0.2rem; }
-.kl-kepala { display: flex; justify-content: space-between; align-items: center;
-    gap: 0.6rem; flex-wrap: wrap; }
-.kl-chip { display: inline-flex; align-items: center; gap: 0.35rem; white-space: nowrap;
-    border-radius: 999px; padding: 0.22rem 0.7rem; font-size: 0.76rem; font-weight: 700; }
-.kl-chip i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-
-.kl-kosong { border: 2px dashed #e6ddd3; border-radius: 14px; padding: 1.6rem 1.2rem;
-    text-align: center; color: #8a827a; font-size: 0.88rem; margin-top: 0.7rem; }
-.kl-kosong-judul { color: #4f4842; font-size: 1rem; font-weight: 700; margin-bottom: 0.25rem; }
-
-.kl-kartu-grup { display: grid; gap: 0.6rem; margin-top: 0.7rem;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-.kl-hasil { border-radius: 14px; padding: 0.85rem 1rem; border: 1px solid; min-width: 0; }
-.kl-hasil-atas { display: flex; justify-content: space-between; align-items: flex-end;
-    gap: 0.8rem; }
-.kl-model { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em;
-    text-transform: uppercase; color: #4f4842; }
-.kl-kelas { font-size: 1.75rem; font-weight: 800; line-height: 1.1; margin-top: 0.15rem;
-    letter-spacing: -0.02em; white-space: nowrap; }
-.kl-conf { text-align: right; white-space: nowrap; }
-.kl-conf small { display: block; font-size: 0.72rem; color: #6f6760; font-weight: 600; }
-.kl-conf b { font-size: 1.45rem; font-weight: 800; letter-spacing: -0.01em; }
-.kl-sebaran { display: flex; height: 8px; border-radius: 999px; overflow: hidden; gap: 2px;
-    margin-top: 0.7rem; background: rgba(0,0,0,0.06); }
-.kl-sebaran-ket { display: flex; justify-content: space-between; gap: 0.5rem;
-    margin-top: 0.4rem; font-size: 0.76rem; color: #4f4842;
-    font-variant-numeric: tabular-nums; }
-.kl-sebaran-ket span { display: inline-flex; align-items: center; gap: 0.3rem;
-    white-space: nowrap; }
-.kl-sebaran-ket i { width: 8px; height: 8px; border-radius: 2px; }
-
-.kl-ringkas { margin-top: 0.7rem; display: flex; flex-direction: column; gap: 0.35rem;
-    font-size: 0.85rem; color: #4f4842; }
-.kl-ringkas > div { display: flex; justify-content: space-between; gap: 1rem;
-    padding: 0.45rem 0.8rem; border-radius: 10px; background: #faf7f3; }
-.kl-ringkas span:first-child { white-space: nowrap; }
-.kl-ringkas b { color: #1f1b18; text-align: right; }
-.kl-titik { display: inline-block; width: 9px; height: 9px; border-radius: 50%;
-    margin-right: 0.35rem; }
-</style>
-"""
+from modul.tampilan import BULAN, WARNA, WARNA_LATAR, WARNA_TEKS, nama_periode
 
 STATUS = {  # label chip, warna teks, warna latar
     "historis": ("Tercatat", "#137a3f", "#dcf3e5"),
@@ -82,9 +28,11 @@ AKHIRAN_BULAN = {"historis": "", "selesai": " · di luar basis data",
 
 
 def _label_grid(baris) -> str:
+    """Teks dropdown wilayah; koordinat selalu ikut supaya grid sekabupaten bisa dibedakan."""
+    nama = nama_wilayah(baris.kabupaten, baris.provinsi, baris.grid_lat, baris.grid_lon)
     if isinstance(baris.kabupaten, str):
-        return f"{baris.kabupaten}, {baris.provinsi}  ·  {baris.grid_lat:.2f}, {baris.grid_lon:.2f}"
-    return f"Grid {baris.grid_lat:.2f}, {baris.grid_lon:.2f}"
+        return f"{nama}  ·  {baris.grid_lat:.2f}, {baris.grid_lon:.2f}"
+    return nama
 
 
 # ---- 3. Pemilihan wilayah dan periode ---------------------------------------------
@@ -164,7 +112,7 @@ def _prediksi_peta(sumber: SumberDataService, periode: str, status: str):
     kabar = st.empty()
     try:
         with st.spinner(f"Menyusun cuaca dan menghitung prediksi kedua model untuk 221 grid "
-                        f"({_nama_periode(periode)}). Pertama kali dibuka bisa beberapa "
+                        f"({nama_periode(periode)}). Pertama kali dibuka bisa beberapa "
                         "menit, mohon tunggu..."):
             prediksi = ModulKlasifikasi(sumber).klasifikasi_bulan(
                 periode, kabar=lambda teks: kabar.caption(teks))
@@ -246,7 +194,7 @@ def _render_hasil(label: dict, grid_id: str, periode: str) -> dict | None:
     chip, teks, latar = STATUS[hasil["status"]]
     st.markdown(
         '<div class="kl-garis"></div><div class="kl-kepala">'
-        f'<div class="kl-h2">Hasil · {_nama_periode(hasil["periode"])}</div>'
+        f'<div class="kl-h2">Hasil · {nama_periode(hasil["periode"])}</div>'
         f'<span class="kl-chip" style="color:{teks};background:{latar}"><i></i>{chip}</span>'
         '</div>', unsafe_allow_html=True)
     if (hasil["grid_id"], hasil["periode"]) != (grid_id, periode):
@@ -286,7 +234,6 @@ def render(sumber: SumberDataService) -> None:
     periode = _periode_aktif(sumber, daftar)
     status = sumber.status_periode(periode)
 
-    st.markdown(CSS, unsafe_allow_html=True)
     st.markdown(
         '<div class="kl-label">Klasifikasi</div>'
         '<div class="kl-judul">Klasifikasi kerawanan per grid</div>'

@@ -4,29 +4,7 @@ import streamlit as st
 
 from domain.grid import Grid
 from domain.sumber_data_service import SumberDataService
-from modul.beranda import BULAN
-
-CSS = """
-<style>
-.rv-grup { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em;
-    text-transform: uppercase; color: #8a827a; margin: 1.1rem 0 0.55rem; }
-.rv-kisi { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
-    gap: 0.6rem; }
-.rv-ubin { border: 1px solid #efe8e0; border-radius: 12px; padding: 0.75rem 0.9rem;
-    background: #fcfaf8; }
-.rv-nama { display: flex; gap: 0.4rem; align-items: baseline; font-size: 0.8rem;
-    color: #756d66; line-height: 1.3; white-space: nowrap; overflow: hidden;
-    text-overflow: ellipsis; }
-.rv-nomor { font-size: 0.7rem; font-weight: 700; color: #b0a79e;
-    font-variant-numeric: tabular-nums; }
-.rv-nilai { font-size: 1.25rem; font-weight: 800; color: #1f1b18; margin-top: 0.2rem;
-    letter-spacing: -0.01em; line-height: 1.2; font-variant-numeric: tabular-nums; }
-.rv-teks { font-size: 1.05rem; overflow-wrap: normal; word-break: keep-all; }
-.rv-nilai small { font-size: 0.8rem; font-weight: 600; color: #756d66; margin-left: 0.2rem; }
-.rv-banding { font-size: 0.74rem; color: #8a827a; margin-top: 0.25rem; line-height: 1.35; }
-.rv-banding b { color: #4f4842; font-weight: 600; }
-</style>
-"""
+from modul.tampilan import BULAN, angka
 
 # Urutan sama dengan FEATURE_COLS: (nomor, kolom, nama, satuan, desimal)
 DINAMIS = [
@@ -36,11 +14,6 @@ DINAMIS = [
     (6, "angin_maks_kmh", "Angin maks.", "km/jam", 1),
     (7, "hari_kering_maks", "Hari kering", "hari", 0),
 ]
-
-
-def angka(x: float, desimal: int = 0) -> str:
-    """Format angka gaya Indonesia: titik ribuan, koma desimal."""
-    return f"{x:,.{desimal}f}".replace(",", "_").replace(".", ",").replace("_", ".")
 
 
 def _jarak(meter: float) -> tuple[str, str]:
@@ -88,7 +61,6 @@ def render(sumber: SumberDataService, grid: Grid) -> None:
     asal = ("kondisi tercatat di basis data" if k.komposisi is None
             else "disusun dari data cuaca harian Open-Meteo")
     st.markdown(
-        CSS +
         '<div class="kl-h2">Rincian variabel prediktor</div>'
         f'<div class="kl-kecil">Sebelas nilai yang menjadi masukan kedua model. Cuaca '
         f'{asal}; pembanding = rata-rata {BULAN[bulan - 1]} '

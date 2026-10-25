@@ -6,6 +6,14 @@ dan KondisiBulanan hanya ada di dalam Grid.
 from dataclasses import dataclass, field
 
 
+def nama_wilayah(kabupaten, provinsi, lat: float, lon: float) -> str:
+    """Nama tampilan sebuah grid: "Kabupaten, Provinsi", atau koordinatnya kalau
+    nama wilayah tidak tersedia (kabupaten bukan teks, misalnya None atau NaN)."""
+    if isinstance(kabupaten, str):
+        return f"{kabupaten}, {provinsi}"
+    return f"Grid {lat:.2f}, {lon:.2f}"
+
+
 @dataclass
 class HasilPrediksi:
     """Hasil klasifikasi satu model untuk satu grid-bulan."""
@@ -63,9 +71,7 @@ class Grid:
 
     @property
     def nama(self) -> str:
-        if self.kabupaten:
-            return f"{self.kabupaten}, {self.provinsi}"
-        return f"Grid {self.grid_lat:.2f}, {self.grid_lon:.2f}"
+        return nama_wilayah(self.kabupaten, self.provinsi, self.grid_lat, self.grid_lon)
 
     def baris_fitur(self, kondisi: KondisiBulanan) -> dict:
         """Satu baris input model untuk kondisi bulan tertentu (belum di-encode)."""

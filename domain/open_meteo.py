@@ -15,15 +15,13 @@ import calendar
 import threading
 import time
 from datetime import date, timedelta
-from pathlib import Path
 from typing import Callable
 
 import pandas as pd
 import requests
 import streamlit as st
 
-ROOT = Path(__file__).resolve().parent.parent
-PATH_CACHE = ROOT / ".cache/cuaca_harian.csv"
+from domain.konstanta import PATH_CACHE_CUACA as PATH_CACHE
 
 URL_ARCHIVE = "https://archive-api.open-meteo.com/v1/archive"
 URL_FORECAST = "https://api.open-meteo.com/v1/forecast"

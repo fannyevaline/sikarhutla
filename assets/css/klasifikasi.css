@@ -1,0 +1,42 @@
+/* Halaman Klasifikasi: panel pilihan dan hasil (modul/klasifikasi.py).
+   Kepala halaman dan kartu hasil dasar ada di komponen.css. */
+
+/* ---- kartu peta dan panel tidak ikut terangkat saat disorot ---- */
+.st-key-bento_kl_peta:hover, .st-key-bento_kl_panel:hover { transform: none !important; }
+.st-key-bento_kl_panel [data-testid="stPopover"] button { padding: 0; min-height: 0;
+    font-size: 0.84rem; color: #b8460b; }
+
+/* ---- kepala bagian hasil ---- */
+.kl-garis { border-top: 1px solid #f1ece6; margin: 0.4rem 0 0.2rem; }
+.kl-kepala { display: flex; justify-content: space-between; align-items: center;
+    gap: 0.6rem; flex-wrap: wrap; }
+.kl-chip { display: inline-flex; align-items: center; gap: 0.35rem; white-space: nowrap;
+    border-radius: 999px; padding: 0.22rem 0.7rem; font-size: 0.76rem; font-weight: 700; }
+.kl-chip i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+/* ---- kartu hasil kedua model berdampingan ---- */
+.kl-kartu-grup { display: grid; gap: 0.6rem; margin-top: 0.7rem;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.kl-hasil-atas { display: flex; justify-content: space-between; align-items: flex-end;
+    gap: 0.8rem; }
+.kl-conf { text-align: right; white-space: nowrap; }
+.kl-conf small { display: block; font-size: 0.72rem; color: #6f6760; font-weight: 600; }
+.kl-conf b { font-size: 1.45rem; font-weight: 800; letter-spacing: -0.01em; }
+.kl-sebaran { display: flex; height: 8px; border-radius: 999px; overflow: hidden; gap: 2px;
+    margin-top: 0.7rem; background: rgba(0,0,0,0.06); }
+.kl-sebaran-ket { display: flex; justify-content: space-between; gap: 0.5rem;
+    margin-top: 0.4rem; font-size: 0.76rem; color: #4f4842;
+    font-variant-numeric: tabular-nums; }
+.kl-sebaran-ket span { display: inline-flex; align-items: center; gap: 0.3rem;
+    white-space: nowrap; }
+.kl-sebaran-ket i { width: 8px; height: 8px; border-radius: 2px; }
+
+/* ---- ringkasan kesepakatan model ---- */
+.kl-ringkas { margin-top: 0.7rem; display: flex; flex-direction: column; gap: 0.35rem;
+    font-size: 0.85rem; color: #4f4842; }
+.kl-ringkas > div { display: flex; justify-content: space-between; gap: 1rem;
+    padding: 0.45rem 0.8rem; border-radius: 10px; background: #faf7f3; }
+.kl-ringkas span:first-child { white-space: nowrap; }
+.kl-ringkas b { color: #1f1b18; text-align: right; }
+.kl-titik { display: inline-block; width: 9px; height: 9px; border-radius: 50%;
+    margin-right: 0.35rem; }
