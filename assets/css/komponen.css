@@ -1,13 +1,29 @@
 /* Komponen bersama halaman Klasifikasi dan Simulasi (awalan kl-):
    kepala halaman, teks, kotak "belum ada hasil", kartu hasil model. */
 
-/* ---- kepala halaman dan teks ---- */
+/* ---- kepala halaman: banner bergradasi, senada dengan kartu judul Beranda ---- */
+[data-testid="stMarkdownContainer"]:has(> .kl-judul),
+[data-testid="stMarkdownContainer"]:has(> div > .kl-judul) {
+    background: radial-gradient(circle at 95% 0%, rgba(255,146,43,0.5), transparent 45%),
+                linear-gradient(120deg, #2a1712 0%, #5c1a1a 55%, #b4321f 100%);
+    border-radius: 18px; padding: 1.3rem 1.8rem 1.35rem; margin-bottom: 0.4rem;
+    box-shadow: 0 10px 30px rgba(92,26,26,0.18);
+}
 .kl-label { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em;
-    text-transform: uppercase; color: #e8590c; margin-bottom: 0.25rem; }
-.kl-judul { font-size: 2rem; font-weight: 800; color: #1f1b18; line-height: 1.15;
+    text-transform: uppercase; color: #ffb38a; margin-bottom: 0.25rem; }
+.kl-judul { font-size: 1.9rem; font-weight: 800; color: #ffffff; line-height: 1.15;
     letter-spacing: -0.02em; }
-.kl-sub { color: #756d66; font-size: 0.98rem; margin: 0.3rem 0 1.2rem; }
+.kl-sub { color: #f5d9cc; font-size: 0.95rem; margin: 0.35rem 0 0; max-width: 62rem; }
+
+/* ---- judul kartu: garis aksen di kiri (dipakai juga oleh bd-h2 dan bt-h2) ---- */
 .kl-h2 { font-size: 1.08rem; font-weight: 700; color: #1f1b18; margin: 0; }
+.kl-h2::before, .bd-h2::before, .bt-h2::before {
+    content: ""; display: inline-block; width: 4px; height: 1em; border-radius: 4px;
+    margin-right: 0.55rem; vertical-align: -0.12em;
+    background: linear-gradient(180deg, #ff922b, #e03131);
+}
+/* judul periode di kartu statistik Beranda sudah punya label di atasnya */
+.bd-h2[style]::before { display: none; }
 .kl-kecil { color: #756d66; font-size: 0.86rem; }
 
 /* ---- kotak kosong (belum ada hasil / galat) ---- */

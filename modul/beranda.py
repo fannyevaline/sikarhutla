@@ -130,7 +130,8 @@ def _sebaran_provinsi(sebaran: pd.DataFrame) -> go.Figure:
         **gaya_grafik(tinggi=400, margin_atas=30, legenda_y=1.0),
         barmode="stack", bargap=0.35, barcornerradius=4,
         xaxis={"title": {"text": "Jumlah grid"}, "gridcolor": "#efe9e2", "zeroline": False},
-        yaxis={"tickfont": {"color": "#1f1b18", "size": 13}},
+        yaxis={"tickfont": {"color": "#1f1b18", "size": 13}, "automargin": True,
+               "ticksuffix": "  "},
     )
     return fig
 

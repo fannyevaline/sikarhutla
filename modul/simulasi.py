@@ -79,7 +79,7 @@ def _setel_awal(awal: dict) -> None:
 def _ubin_angka(kolom: str, batas: tuple) -> None:
     """Ubin: nama + satuan, kotak ketik, lalu rentang data."""
     nama, satuan, desimal, _ = NUMERIK[kolom]
-    lo, hi, md = batas
+    lo, hi, _ = batas
     bulat = kolom == "hari_kering_maks"
     with st.container(key=f"sim_ubin_{kolom}"):
         st.number_input(f"{_nomor(kolom):02d} · {nama} ({satuan})", lo, hi,
@@ -88,7 +88,7 @@ def _ubin_angka(kolom: str, batas: tuple) -> None:
                         key=f"sim_n_{kolom}", on_change=_salin,
                         args=(f"sim_n_{kolom}", kolom))
         st.markdown(f'<div class="sm-rentang">{angka(lo, desimal)}–{angka(hi, desimal)}'
-                    f' · median {angka(md, desimal)}</div>', unsafe_allow_html=True)
+                    f'</div>', unsafe_allow_html=True)
 
 
 def _ubin_kategori(kolom: str, daftar: list[str]) -> None:
@@ -160,7 +160,7 @@ def _render_hasil(sumber: SumberDataService) -> None:
     if simpanan is None:
         st.markdown('<div class="kl-kosong"><div class="kl-kosong-judul">Belum ada hasil'
                     '</div>Isi variabel di atas, atau langsung tekan <b>Jalankan '
-                    'Simulasi</b> untuk mencoba nilai median.</div>', unsafe_allow_html=True)
+                    'Simulasi</b> untuk mencoba nilai bawaan.</div>', unsafe_allow_html=True)
         return
     if simpanan["isian"] != st.session_state.sim_isian:
         st.markdown('<div class="sm-basi">Isian sudah berubah. Tekan Jalankan simulasi '
@@ -193,15 +193,15 @@ def render(sumber: SumberDataService) -> None:
         '<div class="kl-label">Simulasi</div>'
         '<div class="kl-judul">Klasifikasi dari isian sendiri</div>'
         '<div class="kl-sub">Isi sendiri kesebelas variabel prediktor, lalu tekan Jalankan '
-        'simulasi untuk melihat hasil Random Forest dan XGBoost. Nilai awal tiap isian '
-        'adalah median data, dan rentang datanya tertulis di bawah kotak.</div>',
+        'simulasi untuk melihat hasil Random Forest dan XGBoost. Rentang nilai yang ada '
+        'di data tertulis di bawah tiap kotak.</div>',
         unsafe_allow_html=True,
     )
     _render_isian(batas, pilihan)
 
     with st.container(key="bento_sim_tombol"):
         ulang, jalan = st.columns([1, 3], gap="small")
-        ulang.button("Atur ulang ke median", icon=":material/restart_alt:", width="stretch",
+        ulang.button("Atur ulang", icon=":material/restart_alt:", width="stretch",
                      on_click=_setel_awal, args=(awal,),
                      disabled=st.session_state.sim_isian == awal)
         if jalan.button("Jalankan simulasi", type="primary", icon=":material/play_arrow:",
