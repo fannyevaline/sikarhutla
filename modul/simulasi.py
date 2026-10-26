@@ -6,7 +6,7 @@ Tidak terikat grid maupun periode, jadi hasilnya tidak disimpan ke HASIL_PREDIKS
 diambil dari data nyata lewat SumberDataService.rentang_variabel().
 
 Nilai isian disimpan di session_state.sim_isian (satuan tampilan) supaya tetap ada
-saat pindah menu. Model hanya dijalankan saat tombol Jalankan Simulasi ditekan.
+saat pindah menu. Model hanya dijalankan saat tombol Jalankan simulasi ditekan.
 """
 import math
 
@@ -18,7 +18,7 @@ from domain.konstanta import FEATURE_COLS, KELAS
 from domain.model_klasifikasi import kategori_dikenal
 from domain.modul_klasifikasi import ModulKlasifikasi
 from domain.sumber_data_service import SumberDataService
-from modul.tampilan import WARNA, WARNA_LATAR, WARNA_TEKS, angka
+from modul.tampilan import LABEL_GAMBUT, WARNA, WARNA_LATAR, WARNA_TEKS, angka
 
 # kolom -> (nama, satuan tampilan, desimal tampilan, pembagi ke satuan tampilan)
 NUMERIK = {
@@ -34,14 +34,14 @@ NUMERIK = {
 }
 # Dua panel, sama dengan Rincian Variabel di halaman Klasifikasi; nomor tetap 1-11.
 KELOMPOK = [
-    ("Cuaca bulanan", "total / rata-rata satu bulan; hari kering = terpanjang berturut-turut",
+    ("Cuaca bulanan", "Curah hujan dijumlahkan sebulan, variabel lain dirata-ratakan. "
+                      "Hari kering adalah rentang hari tanpa hujan terpanjang dalam sebulan.",
      ["curah_hujan_mm", "suhu_maks_c", "kelembapan_persen", "angin_maks_kmh",
       "hari_kering_maks"]),
-    ("Karakteristik wilayah", "tetap untuk satu grid",
+    ("Karakteristik grid", "Tidak berubah dari bulan ke bulan.",
      ["ketinggian_meter", "kemiringan_lereng", "jarak_air_meter", "jarak_jalan_meter",
       "tutupan_lahan", "gambut"]),
 ]
-LABEL_GAMBUT = {"Ya": "Gambut", "Tidak": "Bukan gambut"}
 NAMA_KATEGORI = {"tutupan_lahan": "Tutupan lahan", "gambut": "Status gambut"}
 
 
@@ -87,7 +87,7 @@ def _ubin_angka(kolom: str, batas: tuple) -> None:
                         format=None if bulat else f"%.{desimal}f",
                         key=f"sim_n_{kolom}", on_change=_salin,
                         args=(f"sim_n_{kolom}", kolom))
-        st.markdown(f'<div class="sm-rentang">{angka(lo, desimal)} – {angka(hi, desimal)}'
+        st.markdown(f'<div class="sm-rentang">{angka(lo, desimal)}–{angka(hi, desimal)}'
                     f' · median {angka(md, desimal)}</div>', unsafe_allow_html=True)
 
 
@@ -163,7 +163,7 @@ def _render_hasil(sumber: SumberDataService) -> None:
                     'Simulasi</b> untuk mencoba nilai median.</div>', unsafe_allow_html=True)
         return
     if simpanan["isian"] != st.session_state.sim_isian:
-        st.markdown('<div class="sm-basi">Isian sudah berubah. Tekan Jalankan Simulasi '
+        st.markdown('<div class="sm-basi">Isian sudah berubah. Tekan Jalankan simulasi '
                     'untuk memperbarui hasil.</div>', unsafe_allow_html=True)
     rf, xgb = simpanan["hasil"]
     a, b, c = st.columns([1, 1, 1.25], gap="small")
@@ -191,10 +191,10 @@ def render(sumber: SumberDataService) -> None:
 
     st.markdown(
         '<div class="kl-label">Simulasi</div>'
-        '<div class="kl-judul">Simulasi kerawanan</div>'
+        '<div class="kl-judul">Klasifikasi dari isian sendiri</div>'
         '<div class="kl-sub">Isi sendiri kesebelas variabel prediktor, lalu tekan Jalankan '
-        'Simulasi untuk melihat hasil Random Forest dan XGBoost. Nilai awal tiap isian '
-        'adalah median data; rentangnya tertulis di bawah kotak.</div>',
+        'simulasi untuk melihat hasil Random Forest dan XGBoost. Nilai awal tiap isian '
+        'adalah median data, dan rentang datanya tertulis di bawah kotak.</div>',
         unsafe_allow_html=True,
     )
     _render_isian(batas, pilihan)
@@ -204,7 +204,7 @@ def render(sumber: SumberDataService) -> None:
         ulang.button("Atur ulang ke median", icon=":material/restart_alt:", width="stretch",
                      on_click=_setel_awal, args=(awal,),
                      disabled=st.session_state.sim_isian == awal)
-        if jalan.button("Jalankan Simulasi", type="primary", icon=":material/play_arrow:",
+        if jalan.button("Jalankan simulasi", type="primary", icon=":material/play_arrow:",
                         width="stretch"):
             isian = st.session_state.sim_isian
             with st.spinner("Menjalankan Random Forest dan XGBoost..."):

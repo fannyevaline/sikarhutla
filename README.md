@@ -26,13 +26,15 @@ streamlit run app.py
 ```
 
 `data/karhutla.db` tidak disimpan di git. Berkas ini dibentuk dari
-`data/dataset_final.csv` dan `data/grid_kalimantan.csv` oleh `scripts/buat_database.py`.
+`data/dataset_final.csv`, `data/grid_kalimantan.csv`, dan `data/dataset_eksternal_final.csv`
+oleh `scripts/buat_database.py`. Data eksternal (Juli–September 2026) hanya menambah baris
+KONDISI_BULANAN untuk 221 grid yang ada di dataset, dengan kelas apa adanya.
 Kalau `HASIL_PREDIKSI` sudah berisi riwayat klasifikasi, skrip itu menolak
 berjalan supaya riwayat tidak terhapus tanpa sengaja. Untuk tetap membangun ulang,
 matikan aplikasi lalu jalankan `python scripts/buat_database.py --paksa`; basis data lama
 disalin dulu ke `data/karhutla_cadangan_<waktu>.db`.
 
-Aplikasi terbuka di `http://localhost:3000`.
+Aplikasi terbuka di `http://localhost:8501`.
 
 Aplikasi tidak memerlukan API key. Data cuaca bulan mendatang diambil dari
 Open-Meteo, yang terbuka tanpa kunci; tanpa koneksi internet, bulan historis tetap
@@ -116,6 +118,7 @@ data dan pelatihan dikerjakan pada proyek terpisah.
 | `data/model/feature_columns_encoded.pkl` | nama kolom setelah one-hot encoding                  |
 | `data/model/perbandingan_smotenc.csv`    | hasil evaluasi kedua model                           |
 | `data/dataset_final.csv`                 | 14.586 baris, 221 grid, Januari 2021 – Juni 2026     |
+| `data/dataset_eksternal_final.csv`       | 696 baris, 232 grid, Juli – September 2026 (pengujian eksternal; 663 baris masuk basis data) |
 | `data/tertile_cutoff.json`               | ambang kelas: P33 = 3, P67 = 11 titik panas          |
 | `data/grid_kalimantan.csv`               | 232 grid wilayah kajian berukuran 0,5° × 0,5°        |
 | `data/grid_wilayah.csv`                  | provinsi & kabupaten (GADM v4.1) di titik pusat grid |

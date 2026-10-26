@@ -4,7 +4,7 @@ import streamlit as st
 
 from domain.grid import Grid
 from domain.sumber_data_service import SumberDataService
-from modul.tampilan import BULAN, angka
+from modul.tampilan import BULAN, LABEL_GAMBUT, angka
 
 # Urutan sama dengan FEATURE_COLS: (nomor, kolom, nama, satuan, desimal)
 DINAMIS = [
@@ -52,22 +52,22 @@ def render(sumber: SumberDataService, grid: Grid) -> None:
     jalan, s_jalan = _jarak(grid.jarak_jalan_meter)
     statis = "".join([
         _ubin(1, "Ketinggian", angka(grid.ketinggian_meter), "m dpl"),
-        _ubin(2, "Kemiringan", angka(grid.kemiringan_lereng, 2), "°"),
-        _ubin(8, "Jarak air", air, s_air),
-        _ubin(9, "Jarak jalan", jalan, s_jalan),
+        _ubin(2, "Kemiringan lereng", angka(grid.kemiringan_lereng, 2), "°"),
+        _ubin(8, "Jarak ke badan air", air, s_air),
+        _ubin(9, "Jarak ke jalan", jalan, s_jalan),
         _ubin(10, "Tutupan lahan", grid.tutupan_lahan.replace("/", "/<wbr>"), teks=True),
-        _ubin(11, "Gambut", grid.gambut, teks=True),
+        _ubin(11, "Status gambut", LABEL_GAMBUT.get(grid.gambut, grid.gambut), teks=True),
     ])
-    asal = ("kondisi tercatat di basis data" if k.komposisi is None
+    asal = ("diambil dari kondisi tercatat di basis data" if k.komposisi is None
             else "disusun dari data cuaca harian Open-Meteo")
     st.markdown(
         '<div class="kl-h2">Rincian variabel prediktor</div>'
-        f'<div class="kl-kecil">Sebelas nilai yang menjadi masukan kedua model. Cuaca '
-        f'{asal}; pembanding = rata-rata {BULAN[bulan - 1]} '
+        f'<div class="kl-kecil">Sebelas nilai yang menjadi masukan kedua model. Nilai cuaca '
+        f'{asal}. Angka pembanding adalah rata-rata bulan {BULAN[bulan - 1]} tahun '
         f'{rata["tahun_awal"]}–{rata["tahun_akhir"]} di grid ini.</div>'
         f'<div class="rv-grup">Cuaca bulanan · berubah tiap bulan</div>'
         f'<div class="rv-kisi">{dinamis}</div>'
-        f'<div class="rv-grup">Karakteristik grid · tetap</div>'
+        f'<div class="rv-grup">Karakteristik grid · tidak berubah dari bulan ke bulan</div>'
         f'<div class="rv-kisi">{statis}</div>',
         unsafe_allow_html=True,
     )

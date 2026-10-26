@@ -35,7 +35,7 @@ def _fitur(grid, periode_tercatat: bool, prediksi: pd.DataFrame | None, model: s
     elif prediksi is not None and grid.grid_id in prediksi.index:
         r = prediksi.loc[grid.grid_id]
         kelas = r[KOLOM[model]]
-        ket = (f"RF: {r.kelas_rf} ({r.conf_rf:.0%}) · "
+        ket = (f"Random Forest: {r.kelas_rf} ({r.conf_rf:.0%}) · "
                f"XGBoost: {r.kelas_xgb} ({r.conf_xgb:.0%})")
     else:
         kelas, ket = "Belum tercatat", "Kategori belum tercatat"
@@ -95,10 +95,12 @@ def render(sumber: SumberDataService, periode: str, grid_terpilih: str,
                 unsafe_allow_html=True)
     model = sumber.model_terbaik()
     if tercatat:
-        sub = "Warna = kategori tercatat dari jumlah titik panas. Klik grid untuk melihat hasilnya."
+        sub = ("Warna menunjukkan kategori tercatat menurut jumlah titik panas. "
+               "Klik grid untuk memilihnya.")
     elif prediksi is not None:
-        sub = (f"Kategori belum tercatat, jadi warna = prediksi {model} (F1-macro "
-               "tertinggi). Arahkan kursor ke grid untuk melihat kedua model.")
+        sub = (f"Kategori bulan ini belum tercatat, jadi warna menunjukkan prediksi {model}, "
+               "model dengan F1-macro tertinggi. Arahkan kursor ke grid untuk melihat "
+               "prediksi kedua model.")
     else:
         sub = ("Kategori bulan ini belum tercatat dan data cuacanya belum bisa diambil, "
                "jadi peta belum bisa diwarnai.")

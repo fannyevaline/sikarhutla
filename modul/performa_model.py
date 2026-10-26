@@ -156,7 +156,7 @@ def _html_ringkasan(baris: pd.DataFrame, judul: str, ket: str,
         isi += f'<tr class="{"pf-final" if b.Final else ""}"><td>{_html_nama(b)}</td>{sel}</tr>'
     return (
         f'<div class="kl-h2">{judul}</div>'
-        f'<div class="kl-kecil">{ket} Angka tebal = terbaik di kolomnya.</div>'
+        f'<div class="kl-kecil">{ket} Angka tebal adalah nilai terbaik di kolomnya.</div>'
         f'<div class="pf-gulir"><table class="pf-tabel"><thead><tr>'
         f'<th>Model</th>{kepala}</tr></thead><tbody>{isi}</tbody></table></div>'
         + (f'<div class="pf-catatan">{catatan}</div>' if catatan else "")
@@ -174,8 +174,8 @@ def _html_per_kelas(per_kelas: pd.DataFrame, model_final: str, ket: str) -> str:
         for k, r in per_kelas.iterrows())
     return (
         f'<div class="kl-h2">Per kelas · {model_final}</div>'
-        f'<div class="kl-kecil">Model final, {ket}. Tingkat kesalahan = bagian data kelas '
-        'itu yang diklasifikasikan ke kelas lain.</div>'
+        f'<div class="kl-kecil">Model final, {ket}. Tingkat kesalahan adalah persentase data '
+        'kelas itu yang diklasifikasikan ke kelas lain.</div>'
         f'<div class="pf-gulir"><table class="pf-tabel"><thead><tr><th>Kelas</th>{kepala}'
         f'<th>Tingkat<small>kesalahan</small></th><th>Jumlah<small>data</small></th>'
         f'</tr></thead><tbody>{isi}</tbody></table></div>'
@@ -207,9 +207,9 @@ def _html_confusion(cm: pd.DataFrame, model_final: str, ket: str) -> str:
         isi += f'<div class="pf-cm-jumlah">{angka(r["Jumlah_data"])}</div>'
     return (
         f'<div class="kl-h2">Confusion matrix · {model_final}</div>'
-        f'<div class="kl-kecil">{ket[0].upper() + ket[1:]}. Baris = kelas sebenarnya, '
-        'kolom = prediksi. Sel berwarna = prediksi benar; bingkai merah = Tinggi yang '
-        'diprediksi Rendah.</div>'
+        f'<div class="kl-kecil">{ket[0].upper() + ket[1:]}. Baris menunjukkan kelas '
+        'sebenarnya, kolom menunjukkan prediksi. Sel berwarna adalah prediksi yang benar; '
+        'sel berbingkai merah adalah grid Tinggi yang diprediksi Rendah.</div>'
         '<div class="pf-gulir"><div class="pf-cm-judul">Prediksi →</div>'
         f'<div class="pf-cm">{kepala}{isi}</div></div>'
     )

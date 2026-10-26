@@ -17,4 +17,4 @@ textColor = "#e8e4df"
 toolbarMode = "minimal"
 
 [server]
-port = 3000
+port = 8501

@@ -2,7 +2,7 @@
 
 2. Peta interaktif kerawanan        (modul/peta.py)
 3. Pemilihan wilayah dan periode
-4. Klasifikasi kerawanan            (hanya saat tombol Jalankan Klasifikasi ditekan)
+4. Klasifikasi kerawanan            (hanya saat tombol Jalankan klasifikasi ditekan)
 5. Hasil klasifikasi dan confidence
 6. Rincian variabel prediktor       (modul/rincian_variabel.py)
 7. Informasi periode mendatang      (modul/periode_mendatang.py)
@@ -15,7 +15,7 @@ from domain.modul_klasifikasi import ModulKlasifikasi
 from domain.open_meteo import GagalAmbilCuaca
 from domain.sumber_data_service import SumberDataService
 from modul import peta, periode_mendatang, rincian_variabel
-from modul.tampilan import BULAN, WARNA, WARNA_LATAR, WARNA_TEKS, nama_periode
+from modul.tampilan import BULAN, WARNA, WARNA_LATAR, WARNA_TEKS, angka, nama_periode
 
 STATUS = {  # label chip, warna teks, warna latar
     "historis": ("Tercatat", "#137a3f", "#dcf3e5"),
@@ -31,8 +31,14 @@ def _label_grid(baris) -> str:
     """Teks dropdown wilayah; koordinat selalu ikut supaya grid sekabupaten bisa dibedakan."""
     nama = nama_wilayah(baris.kabupaten, baris.provinsi, baris.grid_lat, baris.grid_lon)
     if isinstance(baris.kabupaten, str):
-        return f"{nama}  ·  {baris.grid_lat:.2f}, {baris.grid_lon:.2f}"
+        return f"{nama}  ·  {_koordinat(baris.grid_lat, baris.grid_lon, 2)}"
     return nama
+
+
+def _koordinat(lat: float, lon: float, desimal: int) -> str:
+    """Lintang dan bujur dengan koma desimal; titik koma sebagai pemisah supaya tidak
+    tertukar dengan koma desimalnya, misalnya "0,75; 108,75"."""
+    return f"{angka(lat, desimal)}; {angka(lon, desimal)}"
 
 
 # ---- 3. Pemilihan wilayah dan periode ---------------------------------------------
@@ -41,16 +47,16 @@ def _pilih_koordinat(sumber: SumberDataService, lat: float, lon: float, asal: st
     """Ubah pilihan grid dari koordinat (klik peta atau masukan manual). Pesannya
     ditampilkan sebagai toast pada render berikutnya."""
     grid_id, ada = sumber.cari_grid(lat, lon)
-    lokasi = f"{lat:.3f}, {lon:.3f}"
+    lokasi = _koordinat(lat, lon, 3)
     if grid_id is None:
         st.session_state.kl_pesan = (f"{asal} {lokasi} berada di luar 232 grid wilayah "
                                      "kajian.", ":material/wrong_location:")
     elif not ada:
-        st.session_state.kl_pesan = (f"Grid {grid_id} tidak ada di dataset (tidak ada data), "
-                                     "jadi tidak bisa diklasifikasi.", ":material/block:")
+        st.session_state.kl_pesan = (f"Grid {grid_id} tidak memiliki data, jadi tidak bisa "
+                                     "diklasifikasi.", ":material/block:")
     elif asal == "Koordinat":  # klik peta sudah terlihat dari bingkai, tidak perlu toast
         st.session_state.kl_grid = grid_id
-        st.session_state.kl_pesan = (f"Koordinat {lokasi} masuk grid {grid_id}.",
+        st.session_state.kl_pesan = (f"Koordinat {lokasi} berada di grid {grid_id}.",
                                      ":material/check_circle:")
     else:
         st.session_state.kl_grid = grid_id
@@ -81,7 +87,7 @@ def _render_pilihan(sumber: SumberDataService, label: dict, daftar: list[str]) -
     st.markdown('<div class="kl-h2">Wilayah dan periode</div>', unsafe_allow_html=True)
     st.selectbox("Wilayah", list(label), key="kl_grid", format_func=label.get,
                  help="Klik grid pada peta, atau ketik nama kabupaten untuk mencari. "
-                      "Hanya 221 grid yang ada di dataset yang dapat dipilih.")
+                      "Hanya 221 grid yang memiliki data yang dapat dipilih.")
     with st.popover("atau masukkan koordinat", icon=":material/my_location:",
                     type="tertiary"):
         st.markdown('<div class="kl-kecil">Grid yang memuat titik ini akan dipilih.</div>',
@@ -158,7 +164,7 @@ def _html_hasil(h: HasilPrediksi) -> str:
         f'<div class="kl-hasil-atas"><div><div class="kl-model">{h.model}</div>'
         f'<div class="kl-kelas" style="color:{WARNA_TEKS[h.kelas]}">{h.kelas}</div></div>'
         f'<div class="kl-conf" style="color:{WARNA_TEKS[h.kelas]}"><small>Confidence</small>'
-        f'<b>{h.confidence:.1%}</b></div></div>'
+        f'<b>{angka(h.confidence * 100, 1)}%</b></div></div>'
         f'<div class="kl-sebaran">{sebaran}</div>'
         f'<div class="kl-sebaran-ket">{ket}</div></div>'
     )
@@ -173,10 +179,10 @@ def _html_ringkas(grid: Grid) -> str:
         baris.append(("Kategori tercatat",
                       f'<span class="kl-titik" style="background:{WARNA[k.kerawanan]}"></span>'
                       f'{k.kerawanan}, {k.jumlah_hotspot} titik panas'))
-        baris.append(("Sesuai dengan tercatat", " dan ".join(tepat) if tepat else "Tidak ada"))
+        baris.append(("Model yang sesuai", " dan ".join(tepat) if tepat else "Tidak ada"))
     else:
         baris.append(("Kategori tercatat", "Belum ada"))
-        baris.append(("Riwayat", "Tidak disimpan"))
+        baris.append(("Disimpan ke riwayat", "Tidak"))
     isi = "".join(f"<div><span>{a}</span><b>{b}</b></div>" for a, b in baris)
     return f'<div class="kl-ringkas">{isi}</div>'
 
@@ -188,7 +194,7 @@ def _render_hasil(label: dict, grid_id: str, periode: str) -> dict | None:
     if hasil is None:
         st.markdown('<div class="kl-garis"></div><div class="kl-kosong">'
                     '<div class="kl-kosong-judul">Belum ada hasil</div>Pilih wilayah dan '
-                    'periode, lalu tekan <b>Jalankan Klasifikasi</b>.</div>',
+                    'periode, lalu tekan <b>Jalankan klasifikasi</b>.</div>',
                     unsafe_allow_html=True)
         return None
     chip, teks, latar = STATUS[hasil["status"]]
@@ -199,11 +205,11 @@ def _render_hasil(label: dict, grid_id: str, periode: str) -> dict | None:
         '</div>', unsafe_allow_html=True)
     if (hasil["grid_id"], hasil["periode"]) != (grid_id, periode):
         st.markdown(f'<div class="kl-kecil">Hasil untuk {label.get(hasil["grid_id"])}. '
-                    'Pilihan sudah berubah; tekan <b>Jalankan Klasifikasi</b> untuk '
+                    'Pilihan sudah berubah; tekan <b>Jalankan klasifikasi</b> untuk '
                     'memperbarui.</div>', unsafe_allow_html=True)
     if hasil["galat"]:
         st.markdown('<div class="kl-kosong"><div class="kl-kosong-judul">Data cuaca gagal '
-                    f'diambil</div>{hasil["galat"]}<br>Tekan <b>Jalankan Klasifikasi</b> '
+                    f'diambil</div>{hasil["galat"]}<br>Tekan <b>Jalankan klasifikasi</b> '
                     'untuk mencoba lagi.</div>', unsafe_allow_html=True)
         return None
     if hasil["grid"] is None:
@@ -237,8 +243,9 @@ def render(sumber: SumberDataService) -> None:
     st.markdown(
         '<div class="kl-label">Klasifikasi</div>'
         '<div class="kl-judul">Klasifikasi kerawanan per grid</div>'
-        '<div class="kl-sub">Klik grid pada peta atau pilih wilayah dan periode, lalu tekan '
-        'Jalankan Klasifikasi untuk menjalankan Random Forest dan XGBoost.</div>',
+        '<div class="kl-sub">Pilih grid lewat peta, daftar wilayah, atau koordinat, pilih '
+        'periodenya, lalu tekan Jalankan klasifikasi. Hasil Random Forest dan XGBoost tampil '
+        'berdampingan.</div>',
         unsafe_allow_html=True,
     )
     if "kl_pesan" in st.session_state:
@@ -263,7 +270,7 @@ def render(sumber: SumberDataService) -> None:
     with kanan, st.container(key="bento_kl_panel", height="stretch"):
         # 3. Pemilihan wilayah dan periode
         _render_pilihan(sumber, label, daftar)
-        st.button("Jalankan Klasifikasi", type="primary", icon=":material/play_arrow:",
+        st.button("Jalankan klasifikasi", type="primary", icon=":material/play_arrow:",
                   width="stretch", on_click=_minta_jalankan)
         # 5. Hasil kedua model berdampingan (dari tombol terakhir)
         hasil = _render_hasil(label, st.session_state.kl_grid, periode)

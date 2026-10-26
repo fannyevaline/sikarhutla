@@ -20,6 +20,20 @@ BULAN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli",
 
 FONT = "Plus Jakarta Sans, sans-serif"
 
+# Nilai kolom gambut di data -> teks tampilan (Rincian Variabel dan Simulasi)
+LABEL_GAMBUT = {"Ya": "Gambut", "Tidak": "Bukan gambut"}
+
+# Sumber data, dipakai Beranda (ringkas) dan Bantuan (lengkap):
+# (jenis data, nama sumber, rincian, warna ikon)
+SUMBER_DATA = [
+    ("Titik panas", "NASA FIRMS", "Satelit MODIS dan VIIRS", "#f76707"),
+    ("Cuaca dan topografi", "Open-Meteo", "Archive API dan Forecast API", "#1c7ed6"),
+    ("Tutupan lahan", "ESA WorldCover", "Resolusi 10 m, tahun 2021, versi v200", "#2b8a3e"),
+    ("Lahan gambut", "BIG", "Badan Informasi Geospasial", "#9c5b2a"),
+    ("Jarak ke air dan jalan", "OpenStreetMap", "Diunduh lewat Geofabrik", "#0c8599"),
+    ("Batas wilayah", "GADM v4.1", "Nama provinsi dan kabupaten tiap grid", "#7048e8"),
+]
+
 
 @st.cache_data
 def _baca_css(nama: str) -> str:

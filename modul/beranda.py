@@ -5,23 +5,14 @@ import streamlit as st
 
 from domain.konstanta import KELAS
 from domain.sumber_data_service import SumberDataService
-from modul.tampilan import (BULAN, WARNA, WARNA_LATAR, WARNA_TEKS, gaya_grafik,
-                            nama_periode)
+from modul.tampilan import (BULAN, SUMBER_DATA, WARNA, WARNA_LATAR, WARNA_TEKS,
+                            gaya_grafik, nama_periode)
 
 LANGKAH = [
-    ("Pilih grid wilayah", "Lewat peta atau daftar grid"),
-    ("Pilih periode", "Bulan lampau atau sampai 16 hari ke depan"),
+    ("Pilih grid", "Lewat peta, daftar wilayah, atau koordinat"),
+    ("Pilih periode", "Bulan lampau, bulan berjalan, atau bulan yang terjangkau ramalan"),
     ("Jalankan klasifikasi", "Kedua model dijalankan sekaligus"),
     ("Baca hasilnya", "Kategori, confidence, dan nilai variabel"),
-]
-
-SUMBER_DATA = [
-    ("Titik panas", "NASA FIRMS", "#f76707"),
-    ("Cuaca", "Open-Meteo", "#1c7ed6"),
-    ("Tutupan lahan", "ESA WorldCover", "#2b8a3e"),
-    ("Lahan gambut", "BIG", "#9c5b2a"),
-    ("Jalan dan air", "OpenStreetMap", "#0c8599"),
-    ("Batas wilayah", "GADM v4.1", "#7048e8"),
 ]
 
 
@@ -112,7 +103,7 @@ def _html_statistik(periode: str, ringkasan, total: int, n_grid: int) -> str:
         '<div class="bd-label" style="color:#e8590c">Kondisi tercatat terakhir</div>'
         f'<div class="bd-h2" style="font-size:1.35rem">{nama_periode(periode)}</div>'
         f'<div class="bd-kecil">Kategori {total} grid menurut jumlah titik panas yang tercatat, '
-        'bukan hasil prediksi</div>'
+        'bukan hasil prediksi.</div>'
         f'{stat}<div class="bd-batang">{batang}</div>'
         f'<div class="bd-stat-abu"><span>Grid tanpa data</span><b>{n_grid - total} grid</b></div>'
     )
@@ -148,7 +139,7 @@ def _html_kategori(p33: int, p67: int) -> str:
     batas = {
         "Rendah": (f"≤ {p33}", f"sampai {p33} titik panas"),
         "Sedang": (f"{p33 + 1}–{p67}", f"{p33 + 1} sampai {p67} titik panas"),
-        "Tinggi": (f"≥ {p67 + 1}", f"lebih dari {p67} titik panas"),
+        "Tinggi": (f"> {p67}", f"lebih dari {p67} titik panas"),
     }
     isi = "".join(
         f'<div class="bd-kategori">'
@@ -158,7 +149,7 @@ def _html_kategori(p33: int, p67: int) -> str:
     )
     return (
         '<div class="bd-h2">Tiga kategori kerawanan</div>'
-        '<div class="bd-kecil">Dari jumlah titik panas per grid tiap bulan</div>'
+        '<div class="bd-kecil">Berdasarkan jumlah titik panas per grid dalam sebulan.</div>'
         f'{isi}'
     )
 
@@ -178,7 +169,7 @@ def _html_sumber() -> str:
         f'<div class="bd-baris"><span class="bd-baris-kiri">'
         f'<i style="background:linear-gradient(135deg,{warna}33,{warna}88)"></i>'
         f'<span class="bd-kecil">{nama}</span></span><b>{sumber}</b></div>'
-        for nama, sumber, warna in SUMBER_DATA
+        for nama, sumber, _, warna in SUMBER_DATA
     )
     return f'<div class="bd-h2" style="margin-bottom:0.3rem">Sumber data</div>{baris}'
 
@@ -208,7 +199,7 @@ def render(sumber: SumberDataService) -> None:
         st.markdown(
             f'<div class="bd-h2">Sebaran per provinsi · {nama_periode(periode)}</div>'
             '<div class="bd-kecil">Jumlah grid tiap kategori di setiap provinsi, '
-            'diurutkan dari yang paling banyak grid tinggi</div>',
+            'diurutkan dari provinsi dengan grid Tinggi terbanyak.</div>',
             unsafe_allow_html=True,
         )
         sebaran = sumber.sebaran_provinsi(periode)
@@ -223,7 +214,7 @@ def render(sumber: SumberDataService) -> None:
             '<div class="bd-h2">Tren kerawanan bulanan</div>'
             '<div class="bd-kecil">Jumlah grid per kategori tiap bulan, '
             f'{nama_periode(daftar[0])} sampai {nama_periode(periode)}. '
-            'Angka = puncak grid tinggi tiap tahun.</div>',
+            'Angka di atas batang menunjukkan jumlah grid Tinggi terbanyak tiap tahun.</div>',
             unsafe_allow_html=True,
         )
         st.plotly_chart(_tren(sumber.tren_kategori()[KELAS], periode), width="stretch",

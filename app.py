@@ -8,7 +8,7 @@ halaman yang dipilih. Isi tiap halaman ada di modul/, logikanya di domain/.
 import streamlit as st
 
 from domain.sumber_data_service import SumberDataService
-from modul import beranda, klasifikasi, performa_model, simulasi
+from modul import bantuan, beranda, klasifikasi, performa_model, simulasi
 from modul.tampilan import muat_css
 
 st.set_page_config(page_title="SiKarhutla", page_icon="🔥", layout="wide")
@@ -16,7 +16,7 @@ st.set_page_config(page_title="SiKarhutla", page_icon="🔥", layout="wide")
 # Semua berkas di assets/css/, urut dari yang paling umum. Dipasang sekali di sini
 # supaya tiap halaman tidak perlu memuat CSS-nya sendiri.
 CSS = ["global", "komponen", "beranda", "klasifikasi", "peta", "rincian_variabel",
-       "periode_mendatang", "simulasi", "performa_model"]
+       "periode_mendatang", "simulasi", "performa_model", "bantuan"]
 
 # Lima menu sidebar: nama -> (ikon Material, fungsi render; None = belum dibangun)
 HALAMAN = {
@@ -24,7 +24,7 @@ HALAMAN = {
     "Klasifikasi": (":material/travel_explore:", klasifikasi.render),
     "Simulasi": (":material/tune:", simulasi.render),
     "Performa Model": (":material/insights:", performa_model.render),
-    "Bantuan": (":material/help:", None),
+    "Bantuan": (":material/help:", bantuan.render),
 }
 
 LOGO = """

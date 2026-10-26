@@ -1,0 +1,31 @@
+/* Halaman Bantuan (modul/bantuan.py). Awalan kelas: bt- */
+
+.bt-h2 { font-size: 1.15rem; font-weight: 700; color: #1f1b18; margin: 0.4rem 0 0.7rem; }
+
+/* ---- kartu kategori dan cara memakai ---- */
+.bt-kartu { background: #ffffff; border: 1px solid #ece5dc; border-radius: 14px;
+    padding: 0.85rem 1.1rem; margin-bottom: 0.65rem;
+    box-shadow: 0 1px 2px rgba(60,40,20,0.04); }
+.bt-kategori { display: flex; align-items: center; gap: 0.9rem; }
+.bt-lencana { min-width: 3.3rem; height: 2.6rem; border-radius: 10px; padding: 0 0.4rem;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 0.95rem; color: #fff; }
+.bt-nama { font-size: 0.98rem; font-weight: 700; color: #1f1b18; line-height: 1.3; }
+.bt-istilah { font-size: 0.98rem; font-weight: 700; color: #b42323; margin-bottom: 0.15rem; }
+.bt-catatan { margin: 0.1rem 0 1.4rem; }
+
+/* ---- daftar keterbatasan ---- */
+.bt-daftar { list-style: none; padding: 0; margin: 0 0 1.4rem; }
+.bt-daftar li { position: relative; padding-left: 1.3rem; margin-bottom: 0.7rem;
+    color: #3d3631; font-size: 0.93rem; line-height: 1.5; }
+.bt-daftar li::before { content: ""; position: absolute; left: 0.25rem; top: 0.55em;
+    width: 7px; height: 7px; border-radius: 50%; background: #e03131; }
+
+/* ---- kartu sumber data ---- */
+.st-key-bento_bantuan_sumber .bt-h2 { margin-top: 0; margin-bottom: 0.3rem; }
+.bt-baris { display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+    padding: 0.6rem 0; border-bottom: 1px solid #f1ece6; }
+.bt-baris:last-child { border-bottom: none; padding-bottom: 0; }
+.bt-sumber { text-align: right; line-height: 1.3; }
+.bt-sumber b { display: block; color: #1f1b18; font-weight: 600; font-size: 0.88rem; }
+.bt-sumber small { color: #8a827a; font-size: 0.76rem; }

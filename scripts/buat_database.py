@@ -4,7 +4,8 @@ Membentuk basis data SQLite sesuai ERD pada Gambar 3.7 laporan.
 Dijalankan SEKALI dari folder aplikasi:
     python scripts/buat_database.py
 
-Membaca  : data/dataset_final.csv, data/grid_kalimantan.csv
+Membaca  : data/dataset_final.csv, data/grid_kalimantan.csv,
+           data/dataset_eksternal_final.csv (Juli-September 2026, pengujian eksternal)
 Menghasil: data/karhutla.db  berisi tiga tabel
 
     GRID            -- data statis per grid wilayah
@@ -13,6 +14,10 @@ Menghasil: data/karhutla.db  berisi tiga tabel
 
 Script ini TIDAK mengubah berkas CSV mana pun dan TIDAK menyentuh model.
 Menjalankannya ulang akan membangun ulang ketiga tabel dari awal.
+
+GRID dan ada_di_dataset hanya dibentuk dari dataset_final.csv. Data eksternal hanya
+menambah baris KONDISI_BULANAN untuk grid yang ada di dataset; kelasnya dipakai apa
+adanya (sudah dilabeli dengan ambang dataset utama, P33 = 3, P67 = 11).
 
 Pengaman: kalau HASIL_PREDIKSI sudah berisi riwayat klasifikasi, script menolak
 berjalan. Untuk tetap membangun ulang, jalankan:
@@ -26,11 +31,13 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent  # folder aplikasi
 PATH_DATASET = ROOT / "data" / "dataset_final.csv"
 PATH_GRID = ROOT / "data" / "grid_kalimantan.csv"
+PATH_EKSTERNAL = ROOT / "data" / "dataset_eksternal_final.csv"
 PATH_DB = ROOT / "data" / "karhutla.db"
 
 # Kolom statis: nilainya tetap untuk satu grid, tidak berubah tiap bulan
@@ -134,10 +141,14 @@ def main(paksa: bool = False) -> None:
     print("Membaca berkas sumber...")
     df = pd.read_csv(PATH_DATASET)
     grid_resmi = pd.read_csv(PATH_GRID)
-    print(f"  dataset_final.csv   : {len(df):,} baris")
-    print(f"  grid_kalimantan.csv : {len(grid_resmi):,} grid")
+    eksternal = pd.read_csv(PATH_EKSTERNAL)
+    print(f"  dataset_final.csv          : {len(df):,} baris")
+    print(f"  grid_kalimantan.csv        : {len(grid_resmi):,} grid")
+    print(f"  dataset_eksternal_final.csv: {len(eksternal):,} baris")
 
     df["grid_id"] = [buat_grid_id(a, b) for a, b in zip(df.grid_lat, df.grid_lon)]
+    eksternal["grid_id"] = [buat_grid_id(a, b)
+                            for a, b in zip(eksternal.grid_lat, eksternal.grid_lon)]
     grid_resmi["grid_id"] = [buat_grid_id(a, b)
                              for a, b in zip(grid_resmi.grid_lat, grid_resmi.grid_lon)]
 
@@ -157,8 +168,33 @@ def main(paksa: bool = False) -> None:
         statis, on="grid_id", how="left")
     tabel_grid["ada_di_dataset"] = tabel_grid["ketinggian_meter"].notna().astype(int)
 
+    # --- data eksternal: hanya grid yang ada di dataset, statisnya harus sama ---
+    grid_dataset = set(tabel_grid.loc[tabel_grid.ada_di_dataset == 1, "grid_id"])
+    dibuang = eksternal[~eksternal.grid_id.isin(grid_dataset)]
+    eksternal = eksternal[eksternal.grid_id.isin(grid_dataset)]
+    print(f"\n  Data eksternal: {len(eksternal):,} baris dipakai, {len(dibuang)} baris dari "
+          f"{dibuang.grid_id.nunique()} grid tanpa data dibuang")
+    acuan = statis.set_index("grid_id").loc[eksternal.grid_id, KOLOM_STATIS]
+    beda = pd.Series(False, index=eksternal.index)
+    for k in KOLOM_STATIS:
+        a, b = eksternal[k].to_numpy(), acuan[k].to_numpy()
+        if pd.api.types.is_numeric_dtype(eksternal[k]):
+            beda |= ~np.isclose(a.astype(float), b.astype(float), equal_nan=True)
+        else:
+            beda |= a != b
+    if beda.any():
+        print(f"GAGAL: {beda.sum()} baris eksternal punya nilai statis yang "
+              f"berbeda dari dataset_final.csv. Tidak ada yang diubah.")
+        sys.exit(1)
+
     # --- KONDISI_BULANAN ---
-    tabel_kondisi = df[["grid_id", "tahun_bulan"] + KOLOM_DINAMIS].copy()
+    kolom = ["grid_id", "tahun_bulan"] + KOLOM_DINAMIS
+    tabel_kondisi = pd.concat([df[kolom], eksternal[kolom]], ignore_index=True)
+    ganda = tabel_kondisi.duplicated(["grid_id", "tahun_bulan"]).sum()
+    if ganda:
+        print(f"GAGAL: {ganda} pasangan grid-bulan muncul di kedua berkas. "
+              f"Tidak ada yang diubah.")
+        sys.exit(1)
 
     # --- tulis ke SQLite ---
     try:
