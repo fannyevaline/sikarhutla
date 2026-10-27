@@ -22,12 +22,10 @@ import streamlit as st
 
 from domain.konstanta import SKENARIO_FINAL
 from domain.sumber_data_service import SumberDataService
-from modul.tampilan import WARNA, WARNA_LATAR, angka, nama_periode
+from modul.tampilan import BULAN, WARNA, WARNA_LATAR, angka, nama_periode
 
-PERIODE_EKSTERNAL = "Juli–September 2026"  # untuk keterangan saat berkasnya belum ada
+PERIODE_EKSTERNAL = "Juli – September 2026"  # untuk keterangan saat berkasnya belum ada
 KESELURUHAN = "Keseluruhan"  # nilai kolom Periode untuk gabungan seluruh bulan
-LABEL_FINAL_INTERNAL = "Model final"
-LABEL_FINAL_EKSTERNAL = "Model final (ditetapkan dari evaluasi internal)"
 
 
 def _persen(x: float) -> str:
@@ -80,7 +78,7 @@ def _nama_skenario(skenario: str) -> str:
 
 def _html_nama(b) -> str:
     """Nama model + keterangan (skenario atau periode), dengan chip "Model final"."""
-    chip = f'<span class="pf-chip">{b.Label_final}</span>' if b.Final else ""
+    chip = '<span class="pf-chip">Model final</span>' if b.Final else ""
     return (f'<div class="pf-nama">{b.Model}{chip}</div>'
             f'<div class="pf-skenario">{b.Keterangan}</div>')
 
@@ -89,7 +87,6 @@ def _html_nama(b) -> str:
 # Setiap baris ringkasan diberi tiga kolom tampilan:
 #   Keterangan  teks di bawah nama model (skenario / periode)
 #   Final       True bila baris ini model final
-#   Label_final teks chip untuk baris model final
 #   N_Tinggi    jumlah data kelas Tinggi, dibaca dari CSV per kelas
 
 def _baris_internal(sumber: SumberDataService, model_final: str) -> pd.DataFrame:
@@ -97,19 +94,21 @@ def _baris_internal(sumber: SumberDataService, model_final: str) -> pd.DataFrame
     return r.assign(
         Keterangan=r["Skenario"].map(_nama_skenario),
         Final=(r["Skenario"] == SKENARIO_FINAL) & (r["Model"] == model_final),
-        Label_final=LABEL_FINAL_INTERNAL,
         N_Tinggi=[sumber.metrik_per_kelas(s, m).loc["Tinggi", "Jumlah_data"]
                   for s, m in zip(r["Skenario"], r["Model"])],
     )
 
 
 def _rentang_eksternal(r: pd.DataFrame) -> str:
-    """Nama rentang bulan pengujian eksternal dari kolom Periode, mis. "Juli 2026 –
-    September 2026"."""
+    """Nama rentang bulan pengujian eksternal dari kolom Periode, mis. "Juli –
+    September 2026" (tahun ditulis sekali bila sama)."""
     bulan = sorted(p for p in r["Periode"].unique() if p != KESELURUHAN)
     if not bulan:
         return PERIODE_EKSTERNAL
-    return f"{nama_periode(bulan[0])} – {nama_periode(bulan[-1])}"
+    awal, akhir = bulan[0], bulan[-1]
+    if awal[:4] == akhir[:4]:
+        return f"{BULAN[int(awal[5:]) - 1]} – {nama_periode(akhir)}"
+    return f"{nama_periode(awal)} – {nama_periode(akhir)}"
 
 
 def _baris_eksternal(sumber: SumberDataService, r: pd.DataFrame, model_final: str) -> pd.DataFrame:
@@ -117,10 +116,35 @@ def _baris_eksternal(sumber: SumberDataService, r: pd.DataFrame, model_final: st
     return r.assign(
         Keterangan=[rentang if p == KESELURUHAN else nama_periode(p) for p in r["Periode"]],
         Final=r["Model"] == model_final,
-        Label_final=LABEL_FINAL_EKSTERNAL,
         N_Tinggi=[sumber.metrik_eksternal_per_kelas(p, m).loc["Tinggi", "Jumlah_data"]
                   for p, m in zip(r["Periode"], r["Model"])],
     )
+
+
+# ---- 0. sorotan: empat angka utama model final --------------------------------------
+
+def _html_sorotan(baris: pd.DataFrame, ket_final: str) -> str:
+    """Model final, F1 dan AUC macro-nya, serta persen Tinggi -> Rendah. baris = model
+    final dan pembandingnya pada skenario/periode yang sama."""
+    final = baris[baris.Final].iloc[0]
+    lain = baris[~baris.Final]
+    lain = lain.iloc[0] if not lain.empty else None
+
+    def banding(kolom: str) -> str:
+        return f"{lain.Model}: {angka(lain[kolom], 3)}" if lain is not None else ""
+
+    def kotak(label: str, nilai: str, sub: str, kelas: str = "") -> str:
+        return (f'<div class="pf-tile {kelas}"><div class="pf-tile-label">{label}</div>'
+                f'<div class="pf-tile-nilai">{nilai}</div><small>{sub}</small></div>')
+
+    return '<div class="pf-sorotan">' + "".join([
+        kotak("Model final", final.Model, ket_final, "pf-tile-final"),
+        kotak("F1 macro", angka(final.F1_Macro, 3), banding("F1_Macro")),
+        kotak("AUC macro", angka(final.AUC_Macro, 3), banding("AUC_Macro")),
+        kotak("Tinggi → Rendah", _persen(final.Persen_Tinggi_jadi_Rendah),
+              f"{angka(final.Tinggi_jadi_Rendah)} dari {angka(final.N_Tinggi)} grid Tinggi",
+              "pf-tile-bahaya"),
+    ]) + "</div>"
 
 
 # ---- 1. tabel ringkasan ------------------------------------------------------------
@@ -156,7 +180,7 @@ def _html_ringkasan(baris: pd.DataFrame, judul: str, ket: str,
         isi += f'<tr class="{"pf-final" if b.Final else ""}"><td>{_html_nama(b)}</td>{sel}</tr>'
     return (
         f'<div class="kl-h2">{judul}</div>'
-        f'<div class="kl-kecil">{ket} Angka tebal adalah nilai terbaik di kolomnya.</div>'
+        f'<div class="kl-kecil">{ket} Angka tebal menandai nilai terbaik di tiap kolom.</div>'
         f'<div class="pf-gulir"><table class="pf-tabel"><thead><tr>'
         f'<th>Model</th>{kepala}</tr></thead><tbody>{isi}</tbody></table></div>'
         + (f'<div class="pf-catatan">{catatan}</div>' if catatan else "")
@@ -173,9 +197,9 @@ def _html_per_kelas(per_kelas: pd.DataFrame, model_final: str, ket: str) -> str:
         + f'<td>{_persen(r["Tingkat_Kesalahan"])}</td><td>{angka(r["Jumlah_data"])}</td></tr>'
         for k, r in per_kelas.iterrows())
     return (
-        f'<div class="kl-h2">Per kelas · {model_final}</div>'
+        f'<div class="kl-h2">Kinerja per kelas · {model_final}</div>'
         f'<div class="kl-kecil">Model final, {ket}. Tingkat kesalahan adalah persentase data '
-        'kelas itu yang diklasifikasikan ke kelas lain.</div>'
+        'suatu kelas yang diklasifikasikan ke kelas lain.</div>'
         f'<div class="pf-gulir"><table class="pf-tabel"><thead><tr><th>Kelas</th>{kepala}'
         f'<th>Tingkat<small>kesalahan</small></th><th>Jumlah<small>data</small></th>'
         f'</tr></thead><tbody>{isi}</tbody></table></div>'
@@ -207,9 +231,9 @@ def _html_confusion(cm: pd.DataFrame, model_final: str, ket: str) -> str:
         isi += f'<div class="pf-cm-jumlah">{angka(r["Jumlah_data"])}</div>'
     return (
         f'<div class="kl-h2">Confusion matrix · {model_final}</div>'
-        f'<div class="kl-kecil">{ket[0].upper() + ket[1:]}. Baris menunjukkan kelas '
-        'sebenarnya, kolom menunjukkan prediksi. Sel berwarna adalah prediksi yang benar; '
-        'sel berbingkai merah adalah grid Tinggi yang diprediksi Rendah.</div>'
+        f'<div class="kl-kecil">{ket[0].upper() + ket[1:]}. Baris adalah kelas sebenarnya, '
+        'kolom adalah kelas prediksi. Sel berwarna menandai prediksi yang benar; sel '
+        'berbingkai merah menandai grid Tinggi yang diprediksi Rendah.</div>'
         '<div class="pf-gulir"><div class="pf-cm-judul">Prediksi →</div>'
         f'<div class="pf-cm">{kepala}{isi}</div></div>'
     )
@@ -219,16 +243,21 @@ def _html_confusion(cm: pd.DataFrame, model_final: str, ket: str) -> str:
 
 def _catatan_smotenc(baris: pd.DataFrame) -> str:
     """Internal: perubahan Persen_Tinggi_jadi_Rendah dari tanpa ke dengan SMOTENC."""
-    bagian = []
+    bagian, arah = [], set()
     for model, data in baris.groupby("Model", sort=False):
         sebelum = data.loc[data.Skenario != SKENARIO_FINAL, "Persen_Tinggi_jadi_Rendah"]
         sesudah = data.loc[data.Skenario == SKENARIO_FINAL, "Persen_Tinggi_jadi_Rendah"]
         if sebelum.empty or sesudah.empty:
             continue
-        arah = "turun" if sesudah.iloc[0] < sebelum.iloc[0] else "naik"
-        bagian.append(f"{model} {arah} dari <b>{_persen(sebelum.iloc[0])}</b> "
+        arah.add("berkurang" if sesudah.iloc[0] < sebelum.iloc[0] else "bertambah")
+        bagian.append(f"{model} dari <b>{_persen(sebelum.iloc[0])}</b> "
                       f"menjadi <b>{_persen(sesudah.iloc[0])}</b>")
-    return "Dengan SMOTENC, " + "; ".join(bagian) + "." if bagian else ""
+    if not bagian:
+        return ""
+    if len(arah) == 1:
+        return (f"Setelah SMOTENC diterapkan, kesalahan ini {arah.pop()} pada kedua model: "
+                + "; ".join(bagian) + ".")
+    return "Perubahan setelah SMOTENC diterapkan: " + "; ".join(bagian) + "."
 
 
 def _catatan_eksternal(internal: pd.DataFrame, eksternal: pd.DataFrame) -> str:
@@ -238,11 +267,13 @@ def _catatan_eksternal(internal: pd.DataFrame, eksternal: pd.DataFrame) -> str:
     if a.empty or b.empty:
         return ""
     a, b = a.iloc[0], b.iloc[0]
-    return (f"Model final salah mengklasifikasikan <b>{_persen(b.Persen_Tinggi_jadi_Rendah)}"
-            f"</b> grid Tinggi menjadi Rendah pada pengujian eksternal, dibanding "
-            f"<b>{_persen(a.Persen_Tinggi_jadi_Rendah)}</b> pada pengujian internal. "
-            f"Komposisi kelasnya berbeda: {angka(b.N_Tinggi)} dari {angka(b.Jumlah_data)} "
-            "grid-bulan eksternal berkelas Tinggi.")
+    banding = ("lebih kecil" if b.Persen_Tinggi_jadi_Rendah < a.Persen_Tinggi_jadi_Rendah
+               else "lebih besar")
+    return (f"Pada pengujian eksternal, model final mengklasifikasikan "
+            f"<b>{_persen(b.Persen_Tinggi_jadi_Rendah)}</b> grid Tinggi sebagai Rendah, "
+            f"{banding} daripada <b>{_persen(a.Persen_Tinggi_jadi_Rendah)}</b> pada pengujian "
+            f"internal. Perlu diingat, komposisi kelasnya berbeda: {angka(b.N_Tinggi)} dari "
+            f"{angka(b.Jumlah_data)} grid-bulan eksternal berkelas Tinggi.")
 
 
 def _html_bahaya(baris: pd.DataFrame, catatan: str) -> str:
@@ -258,8 +289,9 @@ def _html_bahaya(baris: pd.DataFrame, catatan: str) -> str:
     catatan = f'<div class="pf-catatan">{catatan}</div>' if catatan else ""
     return (
         '<div class="kl-h2">Kesalahan paling berbahaya: Tinggi → Rendah</div>'
-        '<div class="kl-kecil">Grid yang sebenarnya rawan tinggi tetapi diklasifikasikan '
-        'rendah, sehingga bisa luput dari kewaspadaan.</div>'
+        '<div class="kl-kecil">Grid yang sebenarnya berkelas Tinggi tetapi diklasifikasikan '
+        'Rendah, sehingga wilayahnya bisa luput dari kewaspadaan. Makin kecil makin baik.'
+        '</div>'
         f'{batang}{catatan}'
     )
 
@@ -269,34 +301,41 @@ def _html_bahaya(baris: pd.DataFrame, catatan: str) -> str:
 def _html_cara_membaca(per_kelas: pd.DataFrame) -> str:
     n = per_kelas["Jumlah_data"]
     terbanyak = n.idxmax()
-    return (
-        '<div class="kl-h2">Cara membaca</div>'
-        '<div class="pf-baca">'
-        '<div><b>Kenapa macro, bukan weighted.</b> Data uji timpang: '
-        f'{angka(n[terbanyak])} dari {angka(n.sum())} grid-bulan berkelas {terbanyak}. '
-        'Rata-rata <i>weighted</i> diberi bobot sesuai jumlah data, jadi didominasi kelas '
-        f'{terbanyak}. Rata-rata <i>macro</i> memberi bobot sama pada ketiga kelas, sehingga '
-        'kelemahan pada kelas yang sedikit datanya tetap terlihat. Itu juga sebabnya akurasi '
-        'tertinggi tidak otomatis berarti model terbaik.</div>'
-        "<div><b>Cohen's Kappa.</b> Mengukur kesesuaian prediksi dengan label sebenarnya "
-        'setelah dikurangi kesesuaian yang bisa terjadi secara kebetulan. Nilai 0 berarti '
-        'tidak lebih baik daripada menebak sesuai proporsi kelas; 1 berarti sempurna.</div>'
-        '<div><b>MCC.</b> Korelasi antara prediksi dan label sebenarnya, dari −1 sampai 1; '
-        'tetap adil pada data yang timpang karena memperhitungkan semua sel confusion '
-        'matrix.</div>'
-        '<div><b>Model final</b> dipilih dari F1 macro tertinggi pada pengujian internal, '
-        f'skenario {_nama_skenario(SKENARIO_FINAL)}. Kedua berkas .pkl yang diuji adalah '
-        f'skenario {_nama_skenario(SKENARIO_FINAL)}.</div>'
-        '</div>'
-    )
+    skenario = _nama_skenario(SKENARIO_FINAL)
+    butir = [
+        ("Mengapa macro, bukan weighted?",
+         f"Data uji tidak seimbang: {angka(n[terbanyak])} dari {angka(n.sum())} grid-bulan "
+         f"berkelas {terbanyak}. Rata-rata <i>weighted</i> menimbang tiap kelas menurut "
+         f"jumlah datanya, sehingga didominasi kelas {terbanyak}. Rata-rata <i>macro</i> "
+         "memberi bobot sama pada ketiga kelas, jadi kelemahan pada kelas yang datanya "
+         "sedikit tetap terlihat. Karena itu, akurasi tertinggi belum tentu menandakan "
+         "model terbaik."),
+        ("Cohen's Kappa",
+         "Mengukur kecocokan prediksi dengan label sebenarnya setelah dikurangi kecocokan "
+         "yang bisa terjadi secara kebetulan. Nilai 0 berarti tidak lebih baik daripada "
+         "menebak sesuai proporsi kelas; nilai 1 berarti sempurna."),
+        ("MCC",
+         "Korelasi antara prediksi dan label sebenarnya, bernilai −1 sampai 1. Tetap adil "
+         "untuk data yang tidak seimbang karena memperhitungkan seluruh sel confusion "
+         "matrix."),
+        ("Model final",
+         f"Dipilih berdasarkan F1 macro tertinggi pada pengujian internal skenario "
+         f"{skenario}. Kedua berkas model (.pkl) yang dipakai aplikasi berasal dari "
+         "skenario ini."),
+    ]
+    isi = "".join(f'<div class="pf-baca-butir"><b>{judul}</b><div>{teks}</div></div>'
+                  for judul, teks in butir)
+    return f'<div class="kl-h2">Cara membaca metrik</div><div class="pf-baca">{isi}</div>'
 
 
 # ---- susunan satu tab ---------------------------------------------------------------
 
-def _render_isi(akhiran: str, tabel: list[str], per_kelas_html: str, confusion_html: str,
-                bahaya_html: str, baca_html: str, tambahan: tuple[str, ...] = ()) -> None:
+def _render_isi(akhiran: str, sorotan_html: str, tabel: list[str], per_kelas_html: str,
+                confusion_html: str, bahaya_html: str, baca_html: str,
+                tambahan: tuple[str, ...] = ()) -> None:
     """Susunan kartu yang sama untuk kedua tab. akhiran membedakan key container;
     tambahan = kartu pelengkap yang dirender sebelum "Cara membaca"."""
+    st.markdown(sorotan_html, unsafe_allow_html=True)
     for i, html in enumerate(tabel):
         with st.container(key=f"bento_pf_tabel{i}_{akhiran}"):
             st.markdown(html, unsafe_allow_html=True)
@@ -318,14 +357,18 @@ def _render_isi(akhiran: str, tabel: list[str], per_kelas_html: str, confusion_h
 def _render_internal(sumber: SumberDataService, model_final: str,
                      internal: pd.DataFrame) -> None:
     per_kelas = sumber.metrik_per_kelas(SKENARIO_FINAL, model_final)
-    ket = f"skenario {_nama_skenario(SKENARIO_FINAL)}"
+    skenario = _nama_skenario(SKENARIO_FINAL)
+    ket = f"skenario {skenario}"
     n_uji = int(per_kelas["Jumlah_data"].sum())
-    st.markdown(f'<div class="kl-kecil pf-ket-tab">{angka(n_uji)} grid-bulan dari grid yang '
-                'dipisahkan dari data latih.</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="pf-ket-tab">Data uji berisi <b>{angka(n_uji)} grid-bulan</b> '
+                'dari grid yang tidak dipakai saat pelatihan.</div>', unsafe_allow_html=True)
     _render_isi(
         "internal",
+        _html_sorotan(internal[internal.Skenario == SKENARIO_FINAL],
+                      f"Skenario {skenario} · F1 macro tertinggi"),
         [_html_ringkasan(internal, "Perbandingan empat skenario",
-                         "Dua algoritma, masing-masing dilatih tanpa dan dengan SMOTENC.")],
+                         "Random Forest dan XGBoost, masing-masing dilatih tanpa dan dengan "
+                         "SMOTENC.")],
         _html_per_kelas(per_kelas, model_final, ket),
         _html_confusion(sumber.confusion_matrix(SKENARIO_FINAL, model_final), model_final, ket),
         _html_bahaya(internal, _catatan_smotenc(internal)),
@@ -356,28 +399,30 @@ def _render_eksternal(sumber: SumberDataService, model_final: str,
 
     # Ukuran data dibaca dari CSV: total grid-bulan, grid per bulan, banyak bulan.
     bulan_final = per_bulan[per_bulan.Model == model_final]
-    ukuran = f"{angka(keseluruhan.Jumlah_data.iloc[0])} grid-bulan"
+    ukuran = f"<b>{angka(keseluruhan.Jumlah_data.iloc[0])} grid-bulan</b>"
     if not bulan_final.empty:
         ukuran += (f" ({angka(bulan_final.Jumlah_data.iloc[0])} grid × "
                    f"{len(bulan_final)} bulan)")
-    st.markdown(f'<div class="kl-kecil pf-ket-tab">Periode {rentang} · {ukuran}. Model hanya '
-                'memprediksi dengan berkas .pkl yang sama, tidak dilatih ulang.</div>',
-                unsafe_allow_html=True)
+    st.markdown(f'<div class="pf-ket-tab">Data uji berisi {ukuran} periode {rentang}, di luar '
+                'rentang data latih. Kedua model tidak dilatih ulang, dan model final tetap '
+                'yang ditetapkan dari pengujian internal.</div>', unsafe_allow_html=True)
 
     tambahan = ()
     if not per_bulan.empty:
         tambahan = (_html_ringkasan(per_bulan, "Rincian per bulan",
-                                    "Pelengkap tabel keseluruhan di atas.", KOLOM_PER_BULAN),)
+                                    "Akurasi, F1 macro, dan kesalahan Tinggi → Rendah tiap "
+                                    "bulan.", KOLOM_PER_BULAN),)
     catatan = ""
     unggul = _unggul_semua(keseluruhan)
     if unggul and unggul != model_final:
-        catatan = (f"Pada pengujian eksternal (keseluruhan {rentang}), <b>{unggul}</b> "
-                   "memperoleh nilai lebih baik pada seluruh metrik, sehingga keunggulan "
-                   f"{model_final} pada evaluasi internal tidak berlaku pada periode ini.")
+        catatan = (f"Pada keseluruhan periode {rentang}, <b>{unggul}</b> unggul di semua "
+                   f"metrik. Artinya, keunggulan {model_final} pada pengujian internal tidak "
+                   "terulang pada periode ini.")
     _render_isi(
         "eksternal",
+        _html_sorotan(keseluruhan, "Ditetapkan dari pengujian internal"),
         [_html_ringkasan(keseluruhan, f"Keseluruhan · {rentang}",
-                         "Kedua model pada seluruh periode pengujian eksternal.",
+                         "Kedua model pada seluruh bulan pengujian eksternal.",
                          catatan=catatan)],
         _html_per_kelas(per_kelas, model_final, ket),
         _html_confusion(sumber.confusion_matrix_eksternal(model_final), model_final, ket),
@@ -396,7 +441,9 @@ def render(sumber: SumberDataService) -> None:
     st.markdown(
         '<div class="kl-label">Performa model</div>'
         '<div class="kl-judul">Perbandingan performa model</div>'
-        '<div class="kl-sub">Hasil pengujian internal dan eksternal kedua model.</div>',
+        '<div class="kl-sub">Seberapa tepat Random Forest dan XGBoost mengenali tingkat '
+        'kerawanan, diuji pada data uji internal dan pada periode baru di luar data latih.'
+        '</div>',
         unsafe_allow_html=True,
     )
     with st.container(key="pf_tab"):

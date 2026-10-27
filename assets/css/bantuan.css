@@ -1,31 +1,53 @@
 /* Halaman Bantuan (modul/bantuan.py). Awalan kelas: bt- */
 
-.bt-h2 { font-size: 1.15rem; font-weight: 700; color: #1f1b18; margin: 0.4rem 0 0.7rem; }
+.bt-h2 { font-size: 1.05rem; font-weight: 600; color: #1c1b1a; margin: 0 0 0.9rem; }
+.bt-teks { color: #5f5751; font-size: 0.88rem; line-height: 1.5; }
+.bt-catatan { margin-top: 0.8rem; }
 
-/* ---- kartu kategori dan cara memakai ---- */
-.bt-kartu { background: #ffffff; border: 1px solid #ece5dc; border-radius: 14px;
-    padding: 0.85rem 1.1rem; margin-bottom: 0.65rem;
-    box-shadow: 0 1px 2px rgba(60,40,20,0.04); }
-.bt-kategori { display: flex; align-items: center; gap: 0.9rem; }
-.bt-lencana { min-width: 3.3rem; height: 2.6rem; border-radius: 10px; padding: 0 0.4rem;
+/* ---- kisi: tiga kolom (kategori), dua kolom (cara pakai, keterbatasan) ---- */
+.bt-kisi3 { display: grid; gap: 0.8rem; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.bt-kisi2 { display: grid; gap: 0.8rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 900px) { .bt-kisi3, .bt-kisi2 { grid-template-columns: 1fr; } }
+
+/* ---- tiga kategori ---- */
+.bt-kategori { display: flex; align-items: center; gap: 0.9rem; border-radius: 8px;
+    padding: 0.95rem 1.1rem; }
+.bt-lencana { min-width: 3.6rem; height: 2.9rem; border-radius: 6px; padding: 0 0.45rem;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    font-weight: 600; font-size: 1rem; color: #fff; font-variant-numeric: tabular-nums; }
+.bt-nama { font-size: 1.05rem; font-weight: 600; line-height: 1.3; }
+
+/* ---- cara memakai: nomor + teks ---- */
+.bt-langkah { display: flex; gap: 0.85rem; align-items: flex-start; background: #f8f7f5;
+    border-radius: 6px; padding: 0.95rem 1.1rem; }
+.bt-nomor { width: 1.75rem; height: 1.75rem; border-radius: 50%; color: #fff;
+    flex-shrink: 0; background: #e8590c;
     display: flex; align-items: center; justify-content: center;
-    font-weight: 800; font-size: 0.95rem; color: #fff; }
-.bt-nama { font-size: 0.98rem; font-weight: 700; color: #1f1b18; line-height: 1.3; }
-.bt-istilah { font-size: 0.98rem; font-weight: 700; color: #b42323; margin-bottom: 0.15rem; }
-.bt-catatan { margin: 0.1rem 0 1.4rem; }
+    font-weight: 600; font-size: 0.86rem; }
+.bt-istilah { font-size: 0.98rem; font-weight: 600; color: #1f1b18; margin-bottom: 0.15rem; }
+.bt-langkah b { color: #1f1b18; }
 
-/* ---- daftar keterbatasan ---- */
-.bt-daftar { list-style: none; padding: 0; margin: 0 0 1.4rem; }
-.bt-daftar li { position: relative; padding-left: 1.3rem; margin-bottom: 0.7rem;
-    color: #3d3631; font-size: 0.93rem; line-height: 1.5; }
-.bt-daftar li::before { content: ""; position: absolute; left: 0.25rem; top: 0.55em;
-    width: 7px; height: 7px; border-radius: 50%; background: #e03131; }
+/* ---- istilah penting ---- */
+.bt-def { display: grid; grid-template-columns: 7.5rem 1fr; gap: 0.8rem;
+    padding: 0.6rem 0; border-bottom: 1px solid #f1ece6; font-size: 0.88rem;
+    line-height: 1.5; }
+.bt-def:last-child { border-bottom: none; padding-bottom: 0; }
+.bt-def b { color: #1c1b1a; font-weight: 600; }
+.bt-def span { color: #5f5751; }
 
-/* ---- kartu sumber data ---- */
-.st-key-bento_bantuan_sumber .bt-h2 { margin-top: 0; margin-bottom: 0.3rem; }
+/* ---- sumber data ---- */
 .bt-baris { display: flex; justify-content: space-between; align-items: center; gap: 1rem;
     padding: 0.6rem 0; border-bottom: 1px solid #f1ece6; }
 .bt-baris:last-child { border-bottom: none; padding-bottom: 0; }
+.bt-baris-kiri { display: flex; align-items: center; gap: 0.6rem; color: #4f4842;
+    font-size: 0.88rem; }
+.bt-baris-kiri i { width: 0.7rem; height: 0.7rem; border-radius: 2px; flex-shrink: 0; }
 .bt-sumber { text-align: right; line-height: 1.3; }
 .bt-sumber b { display: block; color: #1f1b18; font-weight: 600; font-size: 0.88rem; }
 .bt-sumber small { color: #8a827a; font-size: 0.76rem; }
+
+/* ---- keterbatasan: kartu kuning pucat, garis kuning tua di kiri tiap butir ---- */
+.st-key-bento_bt_batas { background: #fffaf0; border-color: #f2e2bf !important; }
+.bt-batas { background: #ffffff; border: 1px solid #f2e2bf; border-left: 3px solid #e0a000;
+    border-radius: 8px; padding: 0.8rem 1rem; }
+.bt-batas b { display: block; color: #1f1b18; font-size: 0.95rem; margin-bottom: 0.2rem; }
