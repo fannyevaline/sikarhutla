@@ -1,18 +1,33 @@
 /* Ubin sebelas variabel prediktor (modul/rincian_variabel.py). Awalan kelas: rv- */
 .rv-grup { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em;
     text-transform: uppercase; color: #8a827a; margin: 1.1rem 0 0.55rem; }
-.rv-kisi { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+.rv-kisi { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 0.6rem; }
-.rv-ubin { border: 1px solid #efe8e0; border-radius: 12px; padding: 0.75rem 0.9rem;
-    background: #fcfaf8; }
-.rv-nama { display: flex; gap: 0.4rem; align-items: baseline; font-size: 0.8rem;
-    color: #756d66; line-height: 1.3; white-space: nowrap; overflow: hidden;
-    text-overflow: ellipsis; }
-.rv-nomor { font-size: 0.7rem; font-weight: 700; color: #b0a79e;
+.rv-kisi-statis { grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); }
+/* ubin krem tanpa garis tepi, di atas kartu putih */
+.rv-kisi-statis { margin-bottom: 0.4rem; }
+.rv-ubin { border-radius: 16px; padding: 0.85rem 0.95rem 0.9rem; background: #f7f4f0;
+    display: flex; flex-direction: column; min-width: 0;
+    transition: transform 0.15s, box-shadow 0.15s; }
+.rv-ubin:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(60,40,20,0.09); }
+
+/* ikon berwarna + nomor urut fitur */
+.rv-atas { display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 0.55rem; }
+.rv-ikon { width: 34px; height: 34px; border-radius: 10px; display: inline-flex;
+    align-items: center; justify-content: center; color: #ffffff; }
+.rv-ikon svg { width: 18px; height: 18px; fill: none; stroke: currentColor;
+    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.rv-nomor { font-size: 0.7rem; font-weight: 800; opacity: 0.45;
     font-variant-numeric: tabular-nums; }
-.rv-nilai { font-size: 1.25rem; font-weight: 800; color: #1f1b18; margin-top: 0.2rem;
+
+.rv-nama { font-size: 0.8rem; color: #5f5852; font-weight: 600; line-height: 1.3; }
+.rv-nilai { font-size: 1.3rem; font-weight: 800; color: #1f1b18; margin-top: 0.15rem;
     letter-spacing: -0.01em; line-height: 1.2; font-variant-numeric: tabular-nums; }
-.rv-teks { font-size: 1.05rem; overflow-wrap: normal; word-break: keep-all; }
-.rv-nilai small { font-size: 0.8rem; font-weight: 600; color: #756d66; margin-left: 0.2rem; }
-.rv-banding { font-size: 0.74rem; color: #8a827a; margin-top: 0.25rem; line-height: 1.35; }
+.rv-teks { font-size: 1.02rem; line-height: 1.25; overflow-wrap: normal; word-break: keep-all; }
+.rv-nilai small { font-size: 0.78rem; font-weight: 600; color: #78716C; margin-left: 0.2rem; }
+
+/* pembanding dengan rata-rata bulan yang sama */
+.rv-banding { font-size: 0.74rem; color: #6f6760; margin-top: 0.4rem; line-height: 1.35;
+    font-variant-numeric: tabular-nums; }
 .rv-banding b { color: #4f4842; font-weight: 600; }

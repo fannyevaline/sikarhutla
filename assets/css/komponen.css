@@ -24,7 +24,8 @@
 }
 /* judul periode di kartu statistik Beranda sudah punya label di atasnya */
 .bd-h2[style]::before { display: none; }
-.kl-kecil { color: #756d66; font-size: 0.86rem; }
+/* teks keterangan: tingkat paling bawah, tanpa kotak */
+.kl-kecil { color: #78716C; font-size: 13px; line-height: 1.45; }
 
 /* ---- kotak kosong (belum ada hasil / galat) ---- */
 .kl-kosong { border: 2px dashed #e6ddd3; border-radius: 14px; padding: 1.6rem 1.2rem;

@@ -256,7 +256,8 @@ def render(sumber: SumberDataService) -> None:
     if st.session_state.pop("kl_jalankan", False):
         _jalankan(sumber, st.session_state.kl_grid, periode, status)
 
-    kiri, kanan = st.columns([3, 2], gap="medium")
+    # Peta mengisi sisa lebar; panel pilihan lebarnya tetap (lihat klasifikasi.css)
+    kiri, kanan = st.columns([1, 0.3], gap="medium")
 
     # 2. Peta interaktif kerawanan. Digambar sebelum dropdown wilayah supaya klik
     # pada peta sudah mengubah kl_grid sebelum dropdown dibuat.
@@ -272,7 +273,7 @@ def render(sumber: SumberDataService) -> None:
         _render_pilihan(sumber, label, daftar)
         st.button("Jalankan klasifikasi", type="primary", icon=":material/play_arrow:",
                   width="stretch", on_click=_minta_jalankan)
-        # 5. Hasil kedua model berdampingan (dari tombol terakhir)
+        # 5. Hasil kedua model (dari tombol terakhir), di bawah tombol
         hasil = _render_hasil(label, st.session_state.kl_grid, periode)
     if hasil is None:
         return

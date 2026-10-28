@@ -1,8 +1,42 @@
 /* Halaman Klasifikasi: panel pilihan dan hasil (modul/klasifikasi.py).
    Kepala halaman dan kartu hasil dasar ada di komponen.css. */
 
+/* ---- peta mengisi sisa lebar, panel pilihan lebarnya tetap 360px.
+   Di layar sempit keduanya bertumpuk (aturan global.css). ---- */
+@media (min-width: 1001px) {
+    [data-testid="stHorizontalBlock"]:has(.st-key-bento_kl_panel) > [data-testid="stColumn"]:first-child {
+        flex: 1 1 0 !important; min-width: 0; }
+    [data-testid="stHorizontalBlock"]:has(.st-key-bento_kl_panel) > [data-testid="stColumn"]:last-child {
+        flex: 0 0 360px !important; width: 360px; }
+}
+
+/* ---- peta mengisi seluruh sisa tinggi kartunya (minimal 600px, TINGGI_MIN di
+   modul/peta.py), supaya tidak ada ruang kosong bila panel kanan lebih tinggi ---- */
+.st-key-bento_kl_peta > .stElementContainer:has(iframe) { flex: 1 1 auto; }
+.st-key-bento_kl_peta .stElementContainer:has(iframe) div:has(> iframe) { height: 100%; }
+.st-key-bento_kl_peta iframe { height: 100% !important; min-height: 600px; display: block; }
+
 /* ---- kartu peta dan panel tidak ikut terangkat saat disorot ---- */
 .st-key-bento_kl_peta:hover, .st-key-bento_kl_panel:hover { transform: none !important; }
+
+/* ---- hierarki halaman ----
+   Utama (peta, panel pilihan + hasil): kartu putih bawaan global.css, judul dan
+   angka hasil lebih besar.
+   Pendukung (rincian variabel, komposisi cuaca): krem, tanpa garis tepi dan bayangan,
+   lebih kecil, berjarak 48px dari kelompok utama (16px celah Streamlit + 32px). */
+.st-key-bento_kl_peta .kl-h2, .st-key-bento_kl_panel .kl-h2 { font-size: 1.3rem; }
+.st-key-bento_kl_panel .kl-kelas { font-size: 2.1rem; }
+.st-key-bento_kl_panel .kl-conf b { font-size: 1.7rem; }
+
+.st-key-bento_kl_variabel, .st-key-bento_kl_mendatang {
+    background: #faf6f0; border: none; box-shadow: none;
+    padding: 1rem 1.2rem; }
+.st-key-bento_kl_variabel:hover, .st-key-bento_kl_mendatang:hover {
+    box-shadow: none; transform: none; }
+.st-key-bento_kl_variabel { margin-top: 32px; background: #ffffff; }
+.st-key-bento_kl_variabel .kl-h2, .st-key-bento_kl_mendatang .kl-h2 { font-size: 0.98rem; }
+.st-key-bento_kl_mendatang .pm-baris {
+    background: #ffffff; }
 .st-key-bento_kl_panel [data-testid="stPopover"] button { padding: 0; min-height: 0;
     font-size: 0.84rem; color: #b8460b; }
 

@@ -15,7 +15,7 @@ st.set_page_config(page_title="SiKarhutla", page_icon="🔥", layout="wide")
 
 # Semua berkas di assets/css/, urut dari yang paling umum. Dipasang sekali di sini
 # supaya tiap halaman tidak perlu memuat CSS-nya sendiri.
-CSS = ["global", "komponen", "beranda", "klasifikasi", "peta", "rincian_variabel",
+CSS = ["global", "komponen", "beranda", "klasifikasi", "rincian_variabel",
        "periode_mendatang", "simulasi", "performa_model", "bantuan"]
 
 # Lima menu sidebar: nama -> (ikon Material, fungsi render; None = belum dibangun)
