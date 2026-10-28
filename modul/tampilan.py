@@ -15,6 +15,9 @@ WARNA = {"Rendah": "#1f9d55", "Sedang": "#e0a000", "Tinggi": "#e03131"}
 WARNA_TEKS = {"Rendah": "#137a3f", "Sedang": "#9a6700", "Tinggi": "#b42323"}
 WARNA_LATAR = {"Rendah": "#dcf3e5", "Sedang": "#fff0c4", "Tinggi": "#ffe1e1"}
 
+# Warna identitas model di grafik dan tabel Performa Model (lolos uji buta warna)
+WARNA_MODEL = {"Random Forest": "#c2410c", "XGBoost": "#1c6fb8"}
+
 BULAN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli",
          "Agustus", "September", "Oktober", "November", "Desember"]
 
