@@ -3,6 +3,8 @@ import calendar
 import json
 import math
 import sqlite3
+import subprocess
+import sys
 import threading
 from datetime import date, datetime, timedelta, timezone
 
@@ -34,7 +36,16 @@ SQL_GRID_STATIS = (
 @st.cache_resource
 def _koneksi() -> sqlite3.Connection:
     """Satu koneksi untuk seluruh sesi. check_same_thread=False karena Streamlit
-    menjalankan skrip di thread yang berbeda-beda."""
+    menjalankan skrip di thread yang berbeda-beda.
+
+    Kalau data/karhutla.db belum ada (misalnya saat pertama kali di-deploy, karena
+    berkasnya tidak ikut ke git), basis data dibentuk dulu dari CSV."""
+    if not PATH_DB.exists():
+        skrip = PATH_DB.parent.parent / "scripts" / "buat_database.py"
+        hasil = subprocess.run([sys.executable, str(skrip)], capture_output=True, text=True)
+        if hasil.returncode != 0:
+            PATH_DB.unlink(missing_ok=True)
+            raise RuntimeError(f"Gagal membentuk basis data:\n{hasil.stdout}{hasil.stderr}")
     kon = sqlite3.connect(PATH_DB, check_same_thread=False)
     kon.execute("PRAGMA foreign_keys = ON")
     return kon
