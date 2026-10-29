@@ -235,7 +235,7 @@ def _html_temuan(butir: list[tuple[str, str, str, str]]) -> str:
         f'</svg></div><div><div class="pf-temuan-angka">{nilai}</div>'
         f'<div class="pf-temuan-teks">{teks}</div></div></div>'
         for ikon, warna, nilai, teks in butir)
-    return f'<div class="pf-temuan-baris">{kartu}</div>'
+    return f'<div class="pf-bagian">Temuan utama</div><div class="pf-temuan-baris">{kartu}</div>'
 
 
 def _temuan_kelas_tersulit(per_kelas: pd.DataFrame, cm: pd.DataFrame) -> tuple:

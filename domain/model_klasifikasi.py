@@ -2,7 +2,7 @@
 RandomForestModel dan XGBoostModel.
 
 Hanya memuat .pkl lalu memanggil predict()/predict_proba(). Tidak ada fit() di sini.
-Cara pemanggilan mengikuti catatan.md persis.
+Urutan pemanggilan disamakan dengan skrip pelatihan.
 """
 from abc import ABC, abstractmethod
 from pathlib import Path

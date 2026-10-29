@@ -22,3 +22,6 @@ data/karhutla*.db
 
 # Cache cuaca harian Open-Meteo (dibuat otomatis oleh aplikasi)
 .cache/
+
+catatan.md
+.catatan/
