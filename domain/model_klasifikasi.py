@@ -16,7 +16,8 @@ from domain.grid import HasilPrediksi
 from domain.konstanta import (CAT_COLS, FEATURE_COLS, KELAS, PATH_KOLOM_ENCODED,
                               PATH_MODEL_RF, PATH_MODEL_XGB)
 
-le = LabelEncoder(); le.fit(KELAS)
+le = LabelEncoder()
+le.fit(KELAS)
 
 
 @st.cache_resource

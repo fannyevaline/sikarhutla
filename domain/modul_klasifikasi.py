@@ -16,6 +16,10 @@ class ModulKlasifikasi:
         self.rf = RandomForestModel()
         self.xgb = XGBoostModel()
 
+    def _jalankan(self, X: pd.DataFrame) -> list[HasilPrediksi]:
+        """Hasil kedua model untuk satu baris input, urut Random Forest lalu XGBoost."""
+        return [self.rf.predict(X)[0], self.xgb.predict(X)[0]]
+
     def klasifikasi(self, grid_id: str, tahun_bulan: str, simpan: bool = True) -> Grid | None:
         """Jalankan kedua model untuk satu grid-bulan. Hasilnya menempel di
         grid.kondisi[0].hasil (urutan: Random Forest, XGBoost).
@@ -33,7 +37,7 @@ class ModulKlasifikasi:
             return None
         kondisi = grid.kondisi[0]
         X = siapkan(pd.DataFrame([grid.baris_fitur(kondisi)]))
-        kondisi.hasil = [self.rf.predict(X)[0], self.xgb.predict(X)[0]]
+        kondisi.hasil = self._jalankan(X)
         if simpan and kondisi.kondisi_id is not None:
             self.sumber.simpan_hasil(kondisi.kondisi_id, kondisi.hasil)
         return grid
@@ -43,7 +47,7 @@ class ModulKlasifikasi:
         Forest, XGBoost). Tidak disimpan ke HASIL_PREDIKSI karena tidak terikat grid
         maupun periode."""
         X = siapkan(pd.DataFrame([nilai]))
-        return [self.rf.predict(X)[0], self.xgb.predict(X)[0]]
+        return self._jalankan(X)
 
     def klasifikasi_bulan(self, tahun_bulan: str, kabar=None) -> pd.DataFrame:
         """Jalankan kedua model untuk semua grid pada bulan di luar basis data (untuk
