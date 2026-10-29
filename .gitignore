@@ -1,4 +1,4 @@
-# Rahasia - JANGAN PERNAH di-commit
+﻿# Rahasia - JANGAN PERNAH di-commit
 .env
 *.key
 
@@ -23,5 +23,3 @@ data/karhutla*.db
 # Cache cuaca harian Open-Meteo (dibuat otomatis oleh aplikasi)
 .cache/
 
-catatan.md
-.catatan/
