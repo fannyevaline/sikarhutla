@@ -79,6 +79,20 @@ def _baca_perbandingan_final() -> pd.DataFrame:
     return hasil[hasil["Skenario"] == SKENARIO_FINAL].set_index("Model")
 
 
+@st.cache_data
+def _rentang_variabel() -> tuple[pd.DataFrame, dict[str, list[str]]]:
+    """Isi SumberDataService.rentang_variabel(). Dihitung sekali per proses karena
+    halaman Simulasi memanggilnya di setiap klik isian."""
+    statis = _query(SQL_GRID_STATIS).drop(columns=["grid_id", "grid_lat", "grid_lon"])
+    cuaca = _query("SELECT curah_hujan_mm, suhu_maks_c, kelembapan_persen, "
+                   "       angin_maks_kmh, hari_kering_maks FROM KONDISI_BULANAN")
+    numerik = pd.concat([statis.select_dtypes("number"), cuaca], axis=1)
+    rentang = numerik.agg(["min", "max", "median"]).T
+    kategori = {k: statis[k].value_counts().index.tolist()
+                for k in ("tutupan_lahan", "gambut")}
+    return rentang, kategori
+
+
 class SumberDataService:
     """Sumber data historis dari basis data karhutla.db dan ambang tertile."""
 
@@ -225,14 +239,7 @@ class SumberDataService:
         """Min, max, dan median tiap variabel numerik (baris = kolom), serta nilai unik
         variabel kategorikal urut dari yang paling sering. Variabel statis dihitung
         dari 221 grid (satu nilai per grid), variabel cuaca dari seluruh grid-bulan."""
-        statis = _query(SQL_GRID_STATIS).drop(columns=["grid_id", "grid_lat", "grid_lon"])
-        cuaca = _query("SELECT curah_hujan_mm, suhu_maks_c, kelembapan_persen, "
-                       "       angin_maks_kmh, hari_kering_maks FROM KONDISI_BULANAN")
-        numerik = pd.concat([statis.select_dtypes("number"), cuaca], axis=1)
-        rentang = numerik.agg(["min", "max", "median"]).T
-        kategori = {k: statis[k].value_counts().index.tolist()
-                    for k in ("tutupan_lahan", "gambut")}
-        return rentang, kategori
+        return _rentang_variabel()
 
     # ---- periode -----------------------------------------------------------------
 

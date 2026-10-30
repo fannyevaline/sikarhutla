@@ -197,6 +197,14 @@ def render(sumber: SumberDataService) -> None:
         'di data tertulis di bawah tiap kotak.</div>',
         unsafe_allow_html=True,
     )
+    _render_badan(sumber, batas, pilihan, awal)
+
+
+@st.fragment
+def _render_badan(sumber: SumberDataService, batas: dict, pilihan: dict,
+                  awal: dict) -> None:
+    """Isian, tombol, dan hasil. Dibuat fragment supaya tiap klik isian hanya
+    menjalankan ulang bagian ini, bukan sidebar dan seluruh halaman."""
     _render_isian(batas, pilihan)
 
     with st.container(key="bento_sim_tombol"):
