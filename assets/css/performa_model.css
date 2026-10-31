@@ -13,6 +13,13 @@
 .st-key-pf_tab .react-aria-SelectionIndicator,
 .st-key-pf_tab [data-baseweb="tab-highlight"], .st-key-pf_tab [data-baseweb="tab-border"] {
     display: none; }
+/* layar HP: kedua tab berbagi lebar supaya tidak terpotong */
+@media (max-width: 768px) {
+    .st-key-pf_tab [role="tablist"] { display: flex; width: 100% !important; box-sizing: border-box; }
+    .st-key-pf_tab [data-testid="stTab"] { flex: 1 1 0; min-width: 0; padding: 0.45rem 0.3rem;
+        justify-content: center; }
+    .st-key-pf_tab [data-testid="stTab"] p { font-size: 0.8rem; white-space: normal; }
+}
 
 .pf-ket-tab { color: #4a4540; font-size: 0.92rem; margin-bottom: 0.3rem; }
 .pf-ket-tab b { color: #1c1b1a; }

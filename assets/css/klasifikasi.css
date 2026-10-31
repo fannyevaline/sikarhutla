@@ -15,6 +15,12 @@
 .st-key-bento_kl_peta > .stElementContainer:has(iframe) { flex: 1 1 auto; }
 .st-key-bento_kl_peta .stElementContainer:has(iframe) div:has(> iframe) { height: 100%; }
 .st-key-bento_kl_peta iframe { height: 100% !important; min-height: 600px; display: block; }
+/* layar HP: peta lebih pendek supaya halaman masih mudah digulir */
+@media (max-width: 768px) {
+    .st-key-bento_kl_peta .stElementContainer:has(iframe),
+    .st-key-bento_kl_peta .stElementContainer:has(iframe) div:has(> iframe) { height: 440px !important; }
+    .st-key-bento_kl_peta iframe { height: 440px !important; min-height: 440px; }
+}
 
 /* ---- kartu peta dan panel tidak ikut terangkat saat disorot ---- */
 .st-key-bento_kl_peta:hover, .st-key-bento_kl_panel:hover { transform: none !important; }

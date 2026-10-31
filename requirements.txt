@@ -5,7 +5,7 @@ joblib
 requests
 plotly
 folium
-streamlit-folium
+streamlit-folium==0.27.4
 
 # PENTING: dua baris di bawah harus DISAMAKAN dengan versi yang dipakai
 # saat model dilatih, kalau tidak file .pkl bisa gagal dimuat atau

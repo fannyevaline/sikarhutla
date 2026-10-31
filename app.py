@@ -11,7 +11,7 @@ from domain.sumber_data_service import SumberDataService
 from modul import bantuan, beranda, klasifikasi, performa_model, simulasi
 from modul.tampilan import muat_css
 
-st.set_page_config(page_title="SiKarhutla", page_icon="🔥", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="SiKarhutla", page_icon="🔥", layout="wide", initial_sidebar_state="auto")
 
 # Semua berkas di assets/css/, urut dari yang paling umum. Dipasang sekali di sini
 # supaya tiap halaman tidak perlu memuat CSS-nya sendiri.

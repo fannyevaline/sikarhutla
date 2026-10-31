@@ -68,7 +68,12 @@
     display: none; }
 /* Di layar sempit Streamlit menaruh sidebar di atas isi halaman, jadi beri ruang
    selebar rel supaya isi tidak tertutup. */
-@media (max-width: 768px) { [data-testid="stMain"] { padding-left: 76px; } }
+@media (max-width: 768px) {
+    [data-testid="stMain"] { padding-left: 76px; }
+    /* Layar HP: kurangi jarak tepi supaya isi halaman tidak terlalu sempit. */
+    .block-container { padding: 1rem 0.6rem 2rem; }
+    [class*="st-key-bento"] { padding: 1rem 0.85rem; }
+}
 [data-testid="stSidebar"] [data-testid="stVerticalBlock"] { gap: 0.35rem; }
 [data-testid="stSidebar"] button {
     justify-content: flex-start; border: none; border-radius: 10px;

@@ -140,8 +140,8 @@ def _legenda(tercatat: bool, berwarna: bool, model: str) -> str:
     else:
         pekat = ""
     if pekat:
-        pekat = f'<div style="margin-top:4px;color:#78716C">{pekat}</div>'
-    return ('<div style="position:absolute;top:10px;left:54px;right:10px;z-index:1000;'
+        pekat = f'<div class="sk-legenda-ket" style="margin-top:4px;color:#78716C">{pekat}</div>'
+    return ('<div class="sk-legenda" style="position:absolute;top:10px;left:54px;right:10px;z-index:1000;'
             'background:rgba(255,255,255,0.92);border:1px solid #e7e5e4;border-radius:10px;'
             'padding:6px 10px;font:12px/1.35 Plus Jakarta Sans,system-ui,sans-serif;'
             'color:#44403c;box-shadow:0 2px 8px rgba(0,0,0,0.08)">'
@@ -185,7 +185,12 @@ def render(sumber: SumberDataService, periode: str, grid_terpilih: str,
     peta.get_root().header.add_child(folium.Element(
         "<style>html, body { height: 100%; margin: 0; overflow: hidden; }"
         "#root, #parent, .float-child { height: 100%; }"
-        "#map_div { height: 100% !important; }</style>"))
+        "#map_div { height: 100% !important; }"
+        # Layar HP: legenda diringkas supaya tidak menutupi grid.
+        "@media (max-width: 500px) {"
+        ".sk-legenda { left: 44px !important; right: 6px !important; top: 6px !important;"
+        " padding: 4px 6px !important; font-size: 10.5px !important; }"
+        ".sk-legenda-ket { display: none; } }</style>"))
     hasil = st_folium(
         peta, key="kl_peta", height=TINGGI_MIN, use_container_width=True,
         feature_group_to_add=_lapisan(sumber, periode, grid_terpilih, tercatat, prediksi, model),
